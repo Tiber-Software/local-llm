@@ -1,0 +1,24 @@
+Starting production server 🚀
+
+Server started at http://0.0.0.0:5001
+Documentation at http://0.0.0.0:5001/docs
+Scalar docs at http://0.0.0.0:5001/scalar
+
+Logs:
+INFO:     Started server process [63406]
+INFO:     Waiting for application startup.
+[32m[INFO] 2026-06-24 10:19:12,699 [RapidOCR] base.py:23: Using engine_name: onnxruntime[0m
+[32m[INFO] 2026-06-24 10:19:12,737 [RapidOCR] download_file.py:60: File exists and is valid: /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/PP-OCRv6_det_small.onnx[0m
+[32m[INFO] 2026-06-24 10:19:12,737 [RapidOCR] main.py:63: Using /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/PP-OCRv6_det_small.onnx[0m
+[32m[INFO] 2026-06-24 10:19:12,885 [RapidOCR] base.py:23: Using engine_name: onnxruntime[0m
+[32m[INFO] 2026-06-24 10:19:12,889 [RapidOCR] download_file.py:60: File exists and is valid: /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/ch_ppocr_mobile_v2.0_cls_mobile.onnx[0m
+[32m[INFO] 2026-06-24 10:19:12,890 [RapidOCR] main.py:63: Using /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/ch_ppocr_mobile_v2.0_cls_mobile.onnx[0m
+[32m[INFO] 2026-06-24 10:19:12,973 [RapidOCR] base.py:23: Using engine_name: onnxruntime[0m
+[32m[INFO] 2026-06-24 10:19:13,036 [RapidOCR] download_file.py:60: File exists and is valid: /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/PP-OCRv6_rec_small.onnx[0m
+[32m[INFO] 2026-06-24 10:19:13,037 [RapidOCR] main.py:63: Using /home/tiber/.cache/uv/archive-v0/mBEDQ3Pdb5fdgVVJ/lib/python3.13/site-packages/rapidocr/models/PP-OCRv6_rec_small.onnx[0m
+Loading weights:   0%|          | 0/770 [00:00<?, ?it/s]Loading weights:  16%|█▌        | 124/770 [00:00<00:00, 1230.59it/s]Loading weights:  32%|███▏      | 248/770 [00:00<00:00, 651.51it/s] Loading weights:  43%|████▎     | 328/770 [00:00<00:00, 579.54it/s]Loading weights:  51%|█████     | 394/770 [00:00<00:00, 600.62it/s]Loading weights:  60%|██████    | 463/770 [00:00<00:00, 622.68it/s]Loading weights:  69%|██████▉   | 530/770 [00:00<00:00, 604.90it/s]Loading weights:  81%|████████  | 625/770 [00:00<00:00, 697.87it/s]Loading weights:  91%|█████████▏| 704/770 [00:01<00:00, 723.30it/s]Loading weights: 100%|██████████| 770/770 [00:01<00:00, 684.22it/s]
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:5001 (Press CTRL+C to quit)
+INFO:     127.0.0.1:60670 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49232 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38322 - "GET /health HTTP/1.1" 200 OK
