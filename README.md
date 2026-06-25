@@ -14,6 +14,9 @@
     - EMBEDDING_MODEL (can be any embedding ollama model. I suggest embeddinggemma)
     - LANGFLOW_SUPERUSER_PASSWORD (set a strong password)
 
+2. Copy documents.example directory and rename to documents
+  - These are example injections documents that OpenRAG injests at startup
+
 2. Go to ```docker/``` and run ```docker compose --env-file ../.env up```
 
 2. If running for the firs ttime, run ```scripts/bootstrap-ollama.sh <LLM_MODEL> <EMBEDDING_MODEL>```
