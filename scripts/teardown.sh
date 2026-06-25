@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Stopping docker containers and volumes..."
 docker compose -f ../docker/docker-compose.yml down -v
 
