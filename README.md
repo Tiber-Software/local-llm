@@ -27,7 +27,7 @@
 
 # Teardown
 - For a soft reset, run ```docker compose down``` from ```docker/```
-    - This will maintain scripts and settings
-- To delete the volumes, run ```docker compose down -v``` from ```docker/```
+    - This will maintain scripts, settings, and models
+- To delete the models installed, run ```docker compose down -v``` from ```docker/```
 - To perform a hard reset, run ```scripts/teardown.sh```
     - Note that this will remove all chats, documents, etc.

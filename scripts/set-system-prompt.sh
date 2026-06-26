@@ -30,7 +30,7 @@ echo "Done. System prompt updated for sysytem_prompt.txt"
 cd ../docker
 if docker compose ps | grep -q "Up"; then
     echo "Services running. Restarting..."
-    docker compose --env-file ../.env down -v
+    docker compose --env-file ../.env down
     docker compose --env-file ../.env up -d
 fi
 
