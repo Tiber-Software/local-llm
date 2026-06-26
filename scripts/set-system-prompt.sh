@@ -4,7 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "Reading system prompt..."
-SYSTEM_PROMPT=$(cat "system_prompt.txt")
+SYSTEM_PROMPT=$(cat "../system_prompt.txt")
 
 echo "Escaping sequences..."
 SYSTEM_PROMPT_ESCAPED=$(printf '%s\n' "$SYSTEM_PROMPT" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
