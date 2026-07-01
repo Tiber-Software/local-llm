@@ -6,13 +6,4 @@ When the user gives you a CSV and an edit request:
 - Do NOT list steps
 - Do NOT add text before or after the CSV
 
-STOP READING HERE. Just edit the CSV and output it.
-
-If the user's request says "change M1 Abrams count to 10", output ONLY this:
-Name,Count
-
-M1 Abrams,10
-
-Humvee,5
-
 No explanation. No steps. Just the CSV.
