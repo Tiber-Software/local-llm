@@ -68,9 +68,15 @@ def ensure_api_key():
 
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
+    text = text.replace("\\n", "\n")
     match = re.search(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
     if match:
         return match.group(1).strip()
+
+    stripped = text.strip()
+    if "," in stripped and "\n" in stripped:
+        return stripped
+
     return None
 
 def render_csv(csv_text, title=""):
@@ -100,7 +106,7 @@ def chat(api_key, csv_content, instruction):
     resp = requests.post(
         f"{LANGFLOW_URL}/api/v1/run/{LANGFLOW_FLOW_ID}",
         headers={"x-api-key": api_key, "Content-Type": "application/json"},
-        json={"input_value": prompt, "output_type": "chat", "iunput_type": "chat"},
+        json={"input_value": prompt, "output_type": "chat", "input_type": "chat"},
         timeout=120
     )
     resp.raise_for_status()
@@ -121,7 +127,7 @@ def main():
     if len(sys.argv) > 1:
         path = sys.argv[1]
         with open(path) as fin:
-            csv_content = f.read().strip()
+            csv_content = fin.read().strip()
         current_filename = os.path.basename(path)
         console.print(f"[green]Loaded[/green] {path}\n")
         console.print(render_csv(csv_content, title=current_filename))
