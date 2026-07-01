@@ -14,13 +14,10 @@ done
 echo "Pulling models..."
 ./bootstrap-ollama.sh
 
-echo "Models ready. Open http://localhost:${FRONTEND_PORT:-3000} and complete the setup."
-echo "Waiting for setup to be completed..."
-until curl -sf "http://localhost:${FRONTEND_PORT:-3000}/api/settings" | grep -q '"edited":true'; do
-    sleep 5
-done
-
 echo "Apllying system prompt..."
 python3 set-system-prompt.py
+
+echo "Setting LLM provider..."
+python3 set-llm-provider.py
 
 echo "Done."
