@@ -1,4 +1,17 @@
 services:
+  python-client:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.python
+    container_name: csv-editor
+    depends_on:
+      - openrag-backend
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - openrag-network
+
   opensearch:
     image: langflowai/openrag-opensearch:${OPENRAG_VERSION:-latest}
     container_name: os

@@ -7,7 +7,9 @@ _root_dir = os.path.dirname(_script_dir)
 load_dotenv(os.path.join(_root_dir, ".env"))
 
 def main():
-    print("Hello I am running")
+    while True:
+        print("Hello I am running")
+        input()
 
 if __name__ == '__main__':
     main()
