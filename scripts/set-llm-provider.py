@@ -13,6 +13,7 @@ langflow_user = os.getenv('LANGFLOW_SUPERUSER', 'admin')
 langflow_pass = os.getenv('LANGFLOW_SUPERUSER_PASSWORD', '')
 
 llm_model = os.getenv("LLM_MODEL")
+embedding_model = os.getenv("EMBEDDING_MODEL")
 ollama_endpoint = os.getenv("OLLAMA_ENDPOINT")
 
 frontend_port = os.getenv("FRONTEND_PORT")
@@ -21,11 +22,12 @@ flow_id = settings.get('flow_id')
 
 if not flow_id:
     print('Error: could not get flow_id from OpenRAG settings')
+    exit(1)
 
 token_resp = requests.post(
     f"{langflow_base}/api/v1/login",
     data={"username": langflow_user, "password": langflow_pass},
-    headers={'Content-Type': 'application/x-www-urlencoded'}
+    headers={'Content-Type': 'application/x-www-form-urlencoded'}
 )
 token_resp.raise_for_status()
 token = token_resp.json()['access_token']
@@ -33,6 +35,7 @@ lf_headers = {'Authorization': f"Bearer {token}"}
 
 flow_resp = requests.get(f"{langflow_base}/api/v1/flows/{flow_id}", headers=lf_headers)
 flow_resp.raise_for_status()
+flow = flow_resp.json()
 
 ollama_model_value = [{
     'name': llm_model,
@@ -67,3 +70,32 @@ else:
     )
     patch_resp.raise_for_status()
     print(f"Flow {flow_id} Agent node updated to Ollama/{llm_model}")
+
+ollama_embedding_value = [{
+    'name': embedding_model,
+    'icon': 'Ollama',
+    'category': 'Ollama',
+    'provider': 'Ollama',
+    'base_url': ollama_endpoint,
+    'metadata': {
+        'embedding_class': 'OllamaEmbeddings',
+        'model_type': 'embeddings',
+        'param_mapping': {
+            'model': 'model',
+            'base_url': 'base_url'
+        }
+    }
+}]
+
+updated = False
+for node in flow.get('data', {}).get('nodes', []):
+    if node.get('data', {}).get('type', '') == 'EmbeddingModel':
+        node['data']['node']['template']['model']['value'] = ollama_embedding_value
+        updated = True
+
+patch_resp = requests.patch(
+    f"{langflow_base}/api/v1/flows/{flow_id}",
+    json=flow,
+    headers=lf_headers
+)
+patch_resp.raise_for_status()

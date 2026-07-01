@@ -20,4 +20,4 @@ python3 set-system-prompt.py
 echo "Setting LLM provider..."
 python3 set-llm-provider.py
 
-echo "Done."
+docker exec -it csv-editor python main.py
