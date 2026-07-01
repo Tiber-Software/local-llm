@@ -88,6 +88,29 @@ def render_csv(csv_text, title=""):
 
     return table
 
+def chat(api_key, csv_content, instruction):
+    if not LANGFLOW_FLOW_ID:
+        raise ValueError("LANGFLOW_CHAT_FLOW_ID is not set")
+
+    if csv_content:
+        prompt = f"Current CSV:\n```\n{csv_content}\n```\n\nInstruction: {instruction}"
+    else:
+        prompt = instruction
+    
+    resp = requests.post(
+        f"{LANGFLOW_URL}/api/v1/run/{LANGFLOW_FLOW_ID}",
+        headers={"x-api-key": api_key, "Content-Type": "application/json"},
+        json={"input_value": prompt, "output_type": "chat", "iunput_type": "chat"},
+        timeout=120
+    )
+    resp.raise_for_status()
+    for output in resp.json().get("outputs", []):
+        for inner in output.get("outputs", []):
+            for msg in inner.get("messages", []):
+                return msg.get("message", "")
+    
+    return ""
+
 def main():
     api_key = ensure_api_key()
     
