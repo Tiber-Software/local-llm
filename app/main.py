@@ -20,7 +20,7 @@ LANGFLOW_URL = os.getenv("LANGFLOW_URL", "http://localhost:7860")
 LANGFLOW_FLOW_ID = os.getenv("LANGFLOW_CHAT_FLOW_ID", "")
 LANGFLOW_API_KEY = os.getenv("LANGFLOW_API_KEY", "")
 LANGFLOW_USER = os.getenv("LANGFLOW_SUPERUSER", "admin")
-LANGFLOW_PASS = os.getnev("LANGFLOW_SUPERUSER_PASSWORD", "")
+LANGFLOW_PASS = os.getenv("LANGFLOW_SUPERUSER_PASSWORD", "")
 
 def _get_or_create_api_key():
     # Get access token from langflow
@@ -39,7 +39,7 @@ def _get_or_create_api_key():
     keys_resp.raise_for_status()
 
     for key in keys_resp.json().get("api_keys", []):
-        if key["name"] = "csv-editor-client" and key["is_active"]:
+        if key["name"] == "csv-editor-client" and key["is_active"]:
             full_key = key.get("api_key", "")
             if full_key and not full_key.endswith("*"):
                 return full_key
@@ -66,10 +66,41 @@ def ensure_api_key():
     with console.status("[dim]Authenticating with Langflow...[/dim]"):
         return _get_or_create_api_key()
 
-def main():
-    while True:
-        print("Hello I am running")
-        input()
+def extract_csv(text):
+    text = text.replace("</br>", "").replace("<br>", "")
+    match = re.search(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
 
+def render_csv(csv_text, title=""):
+    reader = csv.reader(io.StringIO(csv_text))
+    rows = [r for r in reader if any(c.strip() for c in r)]
+    table = Table(title=title, show_header=bool(rows), header_style="bold cyan")
+    
+    if not rows:
+        return table
+    
+    for col in rows[0]:
+        table.add_column(col.strip())
+    for row in rows[1:]:
+        table.add_row(*[c.strip() for c in row])
+
+    return table
+
+def main():
+    api_key = ensure_api_key()
+    
+    while True:
+        try:
+            instruction = Prompt.ask("\n[bold]Instruction[/bold]")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[dim]Closing application...[/dim]")
+            break
+
+        cmd = instruction.strip().lower()
+
+        if cmd in ("quit", "exit", "q"):
+            break
 if __name__ == '__main__':
     main()
