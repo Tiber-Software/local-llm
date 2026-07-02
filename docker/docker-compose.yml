@@ -10,11 +10,13 @@ services:
     tty: true
     volumes:
       - ../csvs:/app/csvs
+      - ../documents:/app/documents
     environment:
       - LANGFLOW_URL=http://langflow:7860
       - LANGFLOW_CHAT_FLOW_ID=${LANGFLOW_CHAT_FLOW_ID}
       - LANGFLOW_SUPERUSER=${LANGFLOW_SUPERUSER}
       - LANGFLOW_SUPERUSER_PASSWORD=${LANGFLOW_SUPERUSER_PASSWORD}
+      - OPENRAG_API_KEY=${OPENRAG_API_KEY}
     restart: unless-stopped
     networks:
       - openrag-network
@@ -62,6 +64,8 @@ services:
     depends_on:
       - opensearch
       - langflow
+    ports:
+      - "8000:8000"
     environment:
       - OPENSEARCH_HOST=${OPENSEARCH_HOST:-opensearch}
       - LANGFLOW_URL=http://langflow:7860
@@ -135,18 +139,6 @@ services:
     # Linux: Docker Engine does not auto-inject host.docker.internal; map it to the host gateway
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    networks:
-      - openrag-network
-
-  openrag-frontend:
-    image: langflowai/openrag-frontend:${OPENRAG_VERSION:-latest}
-    container_name: openrag-frontend
-    depends_on:
-      - openrag-backend
-    environment:
-      - OPENRAG_BACKEND_HOST=openrag-backend
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - openrag-network
 
