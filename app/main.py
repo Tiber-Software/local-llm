@@ -164,6 +164,15 @@ def chat(api_key, csv_content, instruction):
     
     return ""
 
+def load(path):
+    with open(path) as fin:
+            csv_content = fin.read().strip()
+    current_filename = os.path.basename(path)
+    console.print(f"[green]Loaded[/green] {path}\n")
+    console.print(render_csv(csv_content, title=current_filename))
+
+    return current_filename, csv_content
+
 def main():
     console.print(Panel("[bold cyan] CSV Editor[/bold cyan] - type [bold]help[/bold] for commands", expand=False))
 
@@ -173,11 +182,7 @@ def main():
 
     if len(sys.argv) > 1:
         path = sys.argv[1]
-        with open(path) as fin:
-            csv_content = fin.read().strip()
-        current_filename = os.path.basename(path)
-        console.print(f"[green]Loaded[/green] {path}\n")
-        console.print(render_csv(csv_content, title=current_filename))
+        current_filename, csv_content = load(path)
 
     while True:
         try:
@@ -213,6 +218,11 @@ def main():
             csv_content = ""
             current_filename = ""
             console.print("[dim]Context cleared[/dim]")
+
+        if cmd.startswith("load "):
+            path = instruction.strip()[5:].strip()
+            current_filename, csv_content = load(path)
+            
 
         if cmd.startswith("save "):
             path = instruction.strip()[5:].strip()
