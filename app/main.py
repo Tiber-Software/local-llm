@@ -151,8 +151,15 @@ def chat(api_key, csv_content, instruction):
     resp.raise_for_status()
     for output in resp.json().get("outputs", []):
         for inner in output.get("outputs", []):
-            for msg in inner.get("messages", []):
-                return msg.get("message", "")
+            # Langflow puts the final response in results.message.text
+            text = inner.get("result", {}).get("message", {}).get("text", "")
+            if text:
+                return text
+            
+            # messages list contains intermediate tool-call steps
+            machine_msgs = [m for m in inner.get("messages", []) if m.get("sender") == "Machine"]
+            if machine_msgs:
+                return machine_msgs[-1].get("message", "")
     
     return ""
 
