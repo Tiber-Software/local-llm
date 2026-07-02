@@ -8,6 +8,8 @@ services:
       - openrag-backend
     stdin_open: true
     tty: true
+    volumes:
+      - ../csvs:/app/csvs
     environment:
       - LANGFLOW_URL=http://langflow:7860
       - LANGFLOW_CHAT_FLOW_ID=${LANGFLOW_CHAT_FLOW_ID}

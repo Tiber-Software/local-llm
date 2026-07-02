@@ -16,3 +16,5 @@ documents/
 data/
 config/
 app/tui/
+csvs/*
+!csvs/.gitkeep
