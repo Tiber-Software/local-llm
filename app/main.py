@@ -24,7 +24,7 @@ LANGFLOW_PASS = os.getenv("LANGFLOW_SUPERUSER_PASSWORD", "")
 
 OPENRAG_URL = os.getenv("OPENRAG_URL", "http://openrag-backend:8000")
 OPENRAG_API_KEY = os.getenv("OPENRAG_API_KEY", "")
-DOCUMENTS_DIR os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
+DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
 INGESTED_FILE = os.path.join(DOCUMENTS_DIR, ".ingested")
 
 def _get_or_create_api_key():
@@ -76,7 +76,7 @@ def ingest():
         console.print("[red]Error:[/red] OPENRAG_API_KEY is not set. Run [cyan]python3 scripts/generate-api-key.py[/cyan] and place in .env")
         return
     
-    if not os.path.isdir(DOCUMENTS_DIR)
+    if not os.path.isdir(DOCUMENTS_DIR):
         console.print(f"[red]Error:[/red] documents/ directory not found at {DOCUMENTS_DIR}")
 
     ingested = set()
@@ -103,7 +103,7 @@ def ingest():
                     )
                 resp.raise_for_status()
                 with open(INGESTED_FILE, 'a') as fout:
-                    f.write(filename + "\n")
+                    fout.write(filename + "\n")
                 console.print(f"[green]Ingested[/green] {filename}")
             
             except Exception as e:
@@ -115,10 +115,6 @@ def extract_csv(text):
     match = re.search(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
     if match:
         return match.group(1).strip()
-
-    stripped = text.strip()
-    if "," in stripped and "\n" in stripped:
-        return stripped
 
     return None
 
@@ -192,7 +188,7 @@ def main():
                 "   [cyan]show[/cyan]           - re-display current CSV as a table\n"
                 "   [cyan]raw[/cyan]            - print raw CSV text\n"
                 "   [cyan]save <path>[/cyan]    - save current CSV to a file\n"
-                "   [cyan]quit[/cyan]           - exit"
+                "   [cyan]quit[/cyan]           - exit\n"
                 "   [cyan]ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]"
             )
             continue
@@ -203,8 +199,8 @@ def main():
 
         if cmd.startswith("save "):
             path = instruction.strip()[5:].strip()
-            with open(path, "w", newline="") as f:
-                f.write(csv_content)
+            with open(path, "w", newline="") as fout:
+                fout.write(csv_content)
             console.print(f"[green]Saved[/green] -> {path}")
             continue
 
