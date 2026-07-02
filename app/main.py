@@ -218,10 +218,12 @@ def main():
             csv_content = ""
             current_filename = ""
             console.print("[dim]Context cleared[/dim]")
+            continue
 
         if cmd.startswith("load "):
             path = instruction.strip()[5:].strip()
-            current_filename, csv_content = load(path)
+            current_filename, csv_content = load(f"/app/csvs/{path}")
+            continue
             
 
         if cmd.startswith("save "):
