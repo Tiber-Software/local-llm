@@ -112,6 +112,7 @@ def ingest():
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
     text = text.replace("\\n", "\n")
+    text = text.replace("\r\n", "\n")
     match = re.search(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
     if match:
         return match.group(1).strip()
@@ -208,9 +209,14 @@ def main():
             console.print(csv_content if csv_content else "[dim]No CSV loaded yet[/dim]")
             continue
 
+        if cmd == "clear":
+            csv_content = ""
+            current_filename = ""
+            console.print("[dim]Context cleared[/dim]")
+
         if cmd.startswith("save "):
             path = instruction.strip()[5:].strip()
-            filename = os.basename(path)
+            filename = os.path.basename(path)
 
             # If they entered a path, warn them that it'll just be saved to the csvs dir
             if filename != path:
