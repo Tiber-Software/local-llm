@@ -22,6 +22,11 @@ LANGFLOW_API_KEY = os.getenv("LANGFLOW_API_KEY", "")
 LANGFLOW_USER = os.getenv("LANGFLOW_SUPERUSER", "admin")
 LANGFLOW_PASS = os.getenv("LANGFLOW_SUPERUSER_PASSWORD", "")
 
+OPENRAG_URL = os.getenv("OPENRAG_URL", "http://openrag-backend:8000")
+OPENRAG_API_KEY = os.getenv("OPENRAG_API_KEY", "")
+DOCUMENTS_DIR os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
+INGESTED_FILE = os.path.join(DOCUMENTS_DIR, ".ingested")
+
 def _get_or_create_api_key():
     # Get access token from langflow
     token_resp = requests.post(
@@ -65,6 +70,44 @@ def ensure_api_key():
     # Get/create an api key with the superuser password
     with console.status("[dim]Authenticating with Langflow...[/dim]"):
         return _get_or_create_api_key()
+
+def ingest():
+    if not OPENRAG_API_KEY:
+        console.print("[red]Error:[/red] OPENRAG_API_KEY is not set. Run [cyan]python3 scripts/generate-api-key.py[/cyan] and place in .env")
+        return
+    
+    if not os.path.isdir(DOCUMENTS_DIR)
+        console.print(f"[red]Error:[/red] documents/ directory not found at {DOCUMENTS_DIR}")
+
+    ingested = set()
+    if os.path.exists(INGESTED_FILE):
+        with open(INGESTED_FILE) as fin:
+            ingested = set(line.strip() for line in fin if line.strip())
+    
+    files = [f for f in os.listdir(DOCUMENTS_DIR) if not f.startswith(".") and f not in ingested]
+
+    if not files:
+        console.print("[dim]No new documents to ingest.[/dim]")
+        return
+
+    for filename in files:
+        path = os.path.join(DOCUMENTS_DIR, filename)
+        with console.status(f"[yellow]Ingesting {filename}...[/yellow]"):
+            try:
+                with open(path, "rb") as fin:
+                    resp = requests.post(
+                        f"{OPENRAG_URL}/router/upload_ingest",
+                        headers={"X-API-KEY": OPENRAG_API_KEY},
+                        files={"file": (filename, fin)},
+                        timeout=300
+                    )
+                resp.raise_for_status()
+                with open(INGESTED_FILE, 'a') as fout:
+                    f.write(filename + "\n")
+                console.print(f"[green]Ingested[/green] {filename}")
+            
+            except Exception as e:
+                console.print(f"[red]Failed[/red] {filename}: {e}")
 
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
@@ -150,6 +193,7 @@ def main():
                 "   [cyan]raw[/cyan]            - print raw CSV text\n"
                 "   [cyan]save <path>[/cyan]    - save current CSV to a file\n"
                 "   [cyan]quit[/cyan]           - exit"
+                "   [cyan]ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]"
             )
             continue
 
@@ -162,6 +206,10 @@ def main():
             with open(path, "w", newline="") as f:
                 f.write(csv_content)
             console.print(f"[green]Saved[/green] -> {path}")
+            continue
+
+        if cmd == "ingest":
+            ingest()
             continue
         
         with console.status("[yellow]Thinking...[/yellow]"):
