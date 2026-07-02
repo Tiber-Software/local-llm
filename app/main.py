@@ -204,11 +204,21 @@ def main():
             console.print(render_csv(csv_content, title=current_filename or "CSV") if csv_content else "[dim]No CSV loaded yet[/dim]")
             continue
 
+        if cmd == "raw":
+            console.print(csv_content if csv_content else "[dim]No CSV loaded yet[/dim]")
+            continue
+
         if cmd.startswith("save "):
             path = instruction.strip()[5:].strip()
-            with open(path, "w", newline="") as fout:
+            filename = os.basename(path)
+
+            # If they entered a path, warn them that it'll just be saved to the csvs dir
+            if filename != path:
+                console.print(f"[yellow]Warning:[/yellow] file will be saved at csvs/{filename}")
+
+            with open(f"/app/csvs/{filename}", "w", newline="") as fout:
                 fout.write(csv_content)
-            console.print(f"[green]Saved[/green] -> {path}")
+            console.print(f"[green]Saved[/green] -> csvs/{path}")
             continue
 
         if cmd == "ingest":
