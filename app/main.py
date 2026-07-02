@@ -112,10 +112,10 @@ def ingest():
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
     text = text.replace("\\n", "\n")
-    text = text.replace("\r\n", "\n")
     match = re.search(r"```[^\n]*\n(.*?)```", text, re.DOTALL)
     if match:
-        return match.group(1).strip()
+        lines = [l for l in match.group(1).split("\n") if l.strip()]
+        return "\n".join(lines)
 
     return None
 
@@ -234,7 +234,7 @@ def main():
             if filename != path:
                 console.print(f"[yellow]Warning:[/yellow] file will be saved at csvs/{filename}")
 
-            with open(f"/app/csvs/{filename}", "w", newline="") as fout:
+            with open(f"/app/csvs/{filename}", "w") as fout:
                 fout.write(csv_content)
             console.print(f"[green]Saved[/green] -> csvs/{path}")
             continue
