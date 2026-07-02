@@ -17,6 +17,9 @@ python3 set-system-prompt.py
 echo "Setting LLM provider..."
 python3 set-llm-provider.py
 
+echo "Checking api key..."
+python3 generate-api-key.py
+
 if [ -n "$csv_file" ]; then
     docker exec -it csv-editor python main.py "/app/csvs/$(basename "$csv_file")"
 else

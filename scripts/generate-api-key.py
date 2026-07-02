@@ -13,5 +13,6 @@ if not os.getenv("OPENRAG_API_KEY"):
     key = resp.json()['api_key']
 
     print(f"Add this to .env:\nOPENRAG_API_KEY={key}")
+    input("Press enter once set...")
 else:
     print("OPENRAG_API_KEY variable already set!")
