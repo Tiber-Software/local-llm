@@ -8,6 +8,16 @@ cd "$(dirname "$0")"
 echo "Starting stack..."
 docker compose -f ../docker/docker-compose.yml -f ../docker/docker-compose.gpu.yml --env-file ../.env up -d --build
 
+echo "Waiting for backend..."
+until curl -sf http://localhost:8000/health > /dev/null; do
+    sleep 3
+done
+
+echo "Waiting for langflow..."
+until curl -sf http://localhost:7860/health > /dev/null; do
+    sleep 3
+done
+
 echo "Pulling models..."
 ./bootstrap-ollama.sh
 
