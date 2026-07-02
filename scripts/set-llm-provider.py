@@ -16,13 +16,7 @@ llm_model = os.getenv("LLM_MODEL")
 embedding_model = os.getenv("EMBEDDING_MODEL")
 ollama_endpoint = os.getenv("OLLAMA_ENDPOINT")
 
-frontend_port = os.getenv("FRONTEND_PORT")
-settings = requests.get(f'http://localhost:{frontend_port}/api/settings').json()
-flow_id = settings.get('flow_id')
-
-if not flow_id:
-    print('Error: could not get flow_id from OpenRAG settings')
-    exit(1)
+flow_id = os.getenv("LANGFLOW_CHAT_FLOW_ID", "")
 
 token_resp = requests.post(
     f"{langflow_base}/api/v1/login",
