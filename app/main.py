@@ -27,6 +27,15 @@ OPENRAG_API_KEY = os.getenv("OPENRAG_API_KEY", "")
 DOCUMENTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "documents")
 INGESTED_FILE = os.path.join(DOCUMENTS_DIR, ".ingested")
 
+OPENSEARCH_HOST = os.getenv("OPENSEARCH_HOST", "opensearch")
+OPENSEARCH_PORT = os.getenv("OPENSEARCH_PORT", "9200")
+OPENSEARCH_USERNAME = os.getenv("OPENSEARCH_USERNAME", "admin")
+OPENSEARCH_PASSWORD = os.getenv("OPENSEARCH_PASSWORD", "")
+OPENSEARCH_INDEX_NAME = os.getenv("OPENSEARCH_INDEX_NAME", "documents")
+OPENSEARCH_URL = f"https://{OPENSEARCH_HOST}:{OPENSEARCH_PORT}"
+
+requests.packages.urllib3.disable_warnings()
+
 def _get_or_create_api_key():
     # Get access token from langflow
     token_resp = requests.post(
@@ -109,6 +118,47 @@ def ingest():
             except Exception as e:
                 console.print(f"[red]Failed[/red] {filename}: {e}")
 
+def list_ingested_documents():
+    resp = requests.post(
+        f"{OPENSEARCH_URL}/{OPENSEARCH_INDEX_NAME}/_search",
+        auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+        verify=False,
+        json={
+            "size": 0,
+            "aggs": {
+                "by_file": {
+                    "terms": {"field": "filename", "size": 1000},
+                    "aggs": {
+                        "latest": {
+                            "top_hits": {
+                                "size": 1,
+                                "sort": [{"indexed_time": {"order": "desc"}}],
+                                "_source": ["connector_type", "mimetype", "indexed_time"]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        timeout=15
+    )
+    resp.raise_for_status()
+
+    buckets = resp.json().get("aggregations", {}).get("by_file", {}).get("buckets", [])
+    docs = []
+    for bucket in buckets:
+        hits = bucket["latest"]["hits"]["hits"]
+        source = hits[0]["_source"] if hits else {}
+        docs.append({
+            "filename": bucket["key"],
+            "chunks": bucket["doc_count"],
+            "source": source.get("connector_type", "-"),
+            "mimetype": source.get("mimetype", "-"),
+            "indexed_time": source.get("indexed_time", "-"),
+        })
+
+    return sorted(docs, key=lambda d: d["filename"].lower())
+
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
     text = text.replace("\\n", "\n")
@@ -180,10 +230,6 @@ def main():
     csv_content=""
     current_filename=""
 
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
-        current_filename, csv_content = load(path)
-
     while True:
         try:
             instruction = Prompt.ask("\n[bold]Instruction[/bold]")
@@ -200,14 +246,52 @@ def main():
             console.print(
                 "   [cyan]show[/cyan]           - re-display current CSV as a table\n"
                 "   [cyan]raw[/cyan]            - print raw CSV text\n"
-                "   [cyan]save <path>[/cyan]    - save current CSV to a file\n"
+                "   [cyan]save <file>[/cyan]    - save current CSV to a file\n"
                 "   [cyan]quit[/cyan]           - exit\n"
-                "   [cyan]ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]"
+                "   [cyan]ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]\n"
+                "   [cyan]load <file>[/cyan]    - load a CSV into context\n"
+                "   [cyan]csvs[/cyan]           - show available CSVs you can load\n"
+                "   [cyan]docs[/cyan]           - list all ingested files\n"
+                "   [cyan]clear[/cyan]          - clears the context"
             )
             continue
 
         if cmd == "show":
             console.print(render_csv(csv_content, title=current_filename or "CSV") if csv_content else "[dim]No CSV loaded yet[/dim]")
+            continue
+
+        if cmd == "csvs":
+            csvs_dir = "/app/csvs"
+            table = Table(title="CSVs", show_header=True, header_style="bold cyan")
+            table.add_column("File")
+            if os.path.isdir(csvs_dir):
+                for f in sorted(os.listdir(csvs_dir)):
+                    if not f.startswith("."):
+                        table.add_row(f)
+                
+            console.print(table)
+            continue
+        
+        if cmd == "docs":
+            try:
+                with console.status("[dim]Querying knowledge base...[/dim]"):
+                    docs = list_ingested_documents()
+            except Exception as e:
+                console.print(f"[red]Error:[/red] could not reach knowledge base: {e}")
+                continue
+
+            table = Table(title="Ingested Documents", show_header=True, header_style="bold cyan")
+            table.add_column("File")
+            table.add_column("Source")
+            table.add_column("Type")
+            table.add_column("Chunks", justify="right")
+            table.add_column("Indexed")
+            if not docs:
+                console.print("[dim]No documents found in the knowledge base.[/dim]")
+                continue
+            for d in docs:
+                table.add_row(d["filename"], d["source"], d["mimetype"], str(d["chunks"]), d["indexed_time"])
+            console.print(table)
             continue
 
         if cmd == "raw":
@@ -217,6 +301,7 @@ def main():
         if cmd == "clear":
             csv_content = ""
             current_filename = ""
+            console.clear()
             console.print("[dim]Context cleared[/dim]")
             continue
 
