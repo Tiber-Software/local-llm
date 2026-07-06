@@ -15,7 +15,7 @@ resp = requests.post(
     headers={"Content-Type": "application/json"},
     json={
         "llm_provider": "ollama",
-        "llm_model": llm_model",
+        "llm_model": llm_model,
         "embedding_provider": "ollama",
         "embedding_mode": embedding_model
     }
