@@ -11,7 +11,7 @@ llm_model = os.getenv("LLM_MODEL")
 embedding_model = os.getenv("EMBEDDING_MODEL")
 
 resp = requests.post(
-    "http://localhsot:8000/onboarding",
+    "http://localhost:8000/onboarding",
     headers={"Content-Type": "application/json"},
     json={
         "llm_provider": "ollama",
