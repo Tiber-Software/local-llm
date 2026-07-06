@@ -127,6 +127,36 @@ def ingest():
             except Exception as e:
                 console.print(f"[red]Failed[/red] {filename}: {e}")
 
+def remove_document(filename):
+    if not OPENRAG_API_KEY:
+        console.print("[red]Error:[/red] OPENRAG_API_KEY is not set. Run [cyan]python3 scripts/generate-api-key.py[/cyan] and place in .env")
+        return
+
+    with console.status(f"[yellow]Removing {filename}...[/yellow]"):
+        try:
+            resp = requests.delete(
+                f"{OPENRAG_URL}/v1/documents",
+                headers={"X-API-KEY": OPENRAG_API_KEY, "Content-Type": "application/json"},
+                json={"filename": filename},
+                timeout=30
+            )
+            data = resp.json()
+        except Exception as e:
+            console.print(f"[red]Failed[/red] {filename}: {e}")
+            return
+        
+    if data.get("success"):
+        console.print(f"[green]Removed[/green] {filename} ({data.get('deleted_chunks', 0)} chunks)")
+
+        if os.path.exists(INGESTED_FILE):
+            with open(INGESTED_FILE) as fin:
+                lines = [l.strip() for l in fin if l.strip() and l.strip() != filename]
+            with open(INGESTED_FILE, 'w') as fout:
+                fout.write("\n".join(lines) + ("\n" if lines else ""))
+    
+    else:
+        console.print(f"[red]Failed[/red] {filename}: {data.get('error') or 'unknown error'}")
+
 def list_ingested_documents():
     resp = requests.post(
         f"{OPENSEARCH_URL}/{OPENSEARCH_INDEX_NAME}/_search",
@@ -275,23 +305,23 @@ def main():
 
         if cmd == "help":
             console.print(
-                "   [cyan]show[/cyan]           - re-display current CSV as a table\n"
-                "   [cyan]raw[/cyan]            - print raw CSV text\n"
-                "   [cyan]save <file>[/cyan]    - save current CSV to a file\n"
-                "   [cyan]quit[/cyan]           - exit\n"
-                "   [cyan]ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]\n"
-                "   [cyan]load <file>[/cyan]    - load a CSV into context\n"
-                "   [cyan]csvs[/cyan]           - show available CSVs you can load\n"
-                "   [cyan]docs[/cyan]           - list all ingested files\n"
-                "   [cyan]clear[/cyan]          - clears the context"
+                "   [cyan]/show[/cyan]           - re-display current CSV as a table\n"
+                "   [cyan]/raw[/cyan]            - print raw CSV text\n"
+                "   [cyan]/save <file>[/cyan]    - save current CSV to a file\n"
+                "   [cyan]/quit[/cyan]           - exit\n"
+                "   [cyan]/ingest[/cyan]         - ingest any untracked documents in [cyan]documents/[/cyan]\n"
+                "   [cyan]/load <file>[/cyan]    - load a CSV into context\n"
+                "   [cyan]/csvs[/cyan]           - show available CSVs you can load\n"
+                "   [cyan]/docs[/cyan]           - list all ingested files\n"
+                "   [cyan]/clear[/cyan]          - clears the context"
             )
             continue
 
-        if cmd == "show":
+        if cmd == "/show":
             console.print(render_csv(csv_content, title=current_filename or "CSV") if csv_content else "[dim]No CSV loaded yet[/dim]")
             continue
 
-        if cmd == "csvs":
+        if cmd == "/csvs":
             csvs_dir = "/app/csvs"
             table = Table(title="CSVs", show_header=True, header_style="bold cyan")
             table.add_column("File")
@@ -303,7 +333,7 @@ def main():
             console.print(table)
             continue
         
-        if cmd == "docs":
+        if cmd == "/docs":
             try:
                 with console.status("[dim]Querying knowledge base...[/dim]"):
                     docs = list_ingested_documents()
@@ -325,25 +355,25 @@ def main():
             console.print(table)
             continue
 
-        if cmd == "raw":
+        if cmd == "/raw":
             console.print(csv_content if csv_content else "[dim]No CSV loaded yet[/dim]")
             continue
 
-        if cmd == "clear":
+        if cmd == "/clear":
             csv_content = ""
             current_filename = ""
             console.clear()
             console.print("[dim]Context cleared[/dim]")
             continue
 
-        if cmd.startswith("load "):
-            path = instruction.strip()[5:].strip()
+        if cmd.startswith("/load "):
+            path = instruction.strip()[6:].strip()
             current_filename, csv_content = load(f"/app/csvs/{path}")
             continue
             
 
-        if cmd.startswith("save "):
-            path = instruction.strip()[5:].strip()
+        if cmd.startswith("/save "):
+            path = instruction.strip()[6:].strip()
             filename = os.path.basename(path)
 
             # If they entered a path, warn them that it'll just be saved to the csvs dir
@@ -357,6 +387,11 @@ def main():
 
         if cmd == "ingest":
             ingest()
+            continue
+
+        if cmd.startswith("/remove "):
+            filename = instruction.strip()[8:].strip()
+            remove_document(filename)
             continue
         
         with console.status("[yellow]Thinking...[/yellow]"):
