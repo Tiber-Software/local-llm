@@ -4,6 +4,7 @@ import os
 import re
 import requests
 import sys
+import time
 
 from dotenv import load_dotenv
 from rich.console import Console
@@ -111,9 +112,17 @@ def ingest():
                         timeout=300
                     )
                 resp.raise_for_status()
+                
+                status.update(f"[yellow]Waiting for {filename} to finish indexing...[/yellow]")
+                indexed = wait_for_indexed(filename)
+
                 with open(INGESTED_FILE, 'a') as fout:
                     fout.write(filename + "\n")
-                console.print(f"[green]Ingested[/green] {filename}")
+
+                if indexed:
+                    console.print(f"[green]Ingested[/green] {filename}")
+                else:
+                    console.print(f"[yellow]Uploaded[/yellow] {filename} [dim](indexing still in progress, check 'docks' later)[/dim]")
             
             except Exception as e:
                 console.print(f"[red]Failed[/red] {filename}: {e}")
@@ -158,6 +167,28 @@ def list_ingested_documents():
         })
 
     return sorted(docs, key=lambda d: d["filename"].lower())
+
+def wait_for_indexed(filename, timeout=300, poll_interval=3):
+    elapsed = 0
+    while elapsed < timeout:
+        try:
+            resp = requests.post(
+                f"{OPENSEARCH_URL}/{OPENSEARCH_INDEX_NAME}/_count",
+                aut=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+                verify=False,
+                json={"query": {"term": {"filename": filename}}},
+                timeout=15
+            )
+            resp.raise_for_status()
+            if resp.json().get("count", 0) > 0:
+                return True
+        except Exception:
+            pass
+
+        time.sleep(poll_interval)
+        elapsed += poll_interval
+    
+    return False
 
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
