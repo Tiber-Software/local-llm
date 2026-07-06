@@ -7,89 +7,27 @@ script_dir = os.path.dirname(__file__)
 root_dir = os.path.dirname(script_dir)
 load_dotenv(os.path.join(root_dir, ".env"))
 
-langflow_port = os.getenv('LANGFLOW_PORT', '7860')
-langflow_base = f'http://localhost:{langflow_port}'
-langflow_user = os.getenv('LANGFLOW_SUPERUSER', 'admin')
-langflow_pass = os.getenv('LANGFLOW_SUPERUSER_PASSWORD', '')
-
+openrag_api_key = os.getenv("OPENRAG_API_KEY", "")
 llm_model = os.getenv("LLM_MODEL")
 embedding_model = os.getenv("EMBEDDING_MODEL")
-ollama_endpoint = os.getenv("OLLAMA_ENDPOINT")
 
-flow_id = os.getenv("LANGFLOW_CHAT_FLOW_ID", "")
+if not openrag_api_key:
+    print("Error: OPENRAG_API_KEY is not set. Run scripts/generate-api-key.py first.")
+    raise SystemExit(1)
 
-token_resp = requests.post(
-    f"{langflow_base}/api/v1/login",
-    data={"username": langflow_user, "password": langflow_pass},
-    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+# Let the OpenRAG backend's own settings endpoint wire Ollama into every
+# Langflow flow (chat, ingest, url-ingest, nudges). It knows how to resolve
+# provider-specific fields (e.g. Ollama's base URL) correctly; hand-patching
+# the flow JSON ourselves missed those fields and got clobbered on restart.
+resp = requests.post(
+    "http://localhost:8000/v1/settings",
+    headers={"X-API-KEY": openrag_api_key, "Content-Type": "application/json"},
+    json={
+        "llm_provider": "ollama",
+        "llm_model": llm_model,
+        "embedding_provider": "ollama",
+        "embedding_model": embedding_model,
+    },
 )
-token_resp.raise_for_status()
-token = token_resp.json()['access_token']
-lf_headers = {'Authorization': f"Bearer {token}"}
-
-flow_resp = requests.get(f"{langflow_base}/api/v1/flows/{flow_id}", headers=lf_headers)
-flow_resp.raise_for_status()
-flow = flow_resp.json()
-
-ollama_model_value = [{
-    'name': llm_model,
-    'icon': 'Ollama',
-    'category': 'Ollama',
-    'provider': 'Ollama',
-    'base_url': ollama_endpoint,
-    'metadata': {
-        'context_length': 128000,
-        'model_class': 'ChatOllama',
-        'model_name_param': 'model',
-        'api_key_param': 'api_key',
-        'max_tokens_field_name': 'max_tokens',
-        'base_url_param': 'base_url'
-    }
-}]
-
-updated = False
-for node in flow.get('data', {}).get('nodes', []):
-    if node.get('data', {}).get('type', '') == 'Agent':
-        template = node['data']['node']['template']
-        template['model']['value'] = ollama_model_value
-        updated = True
-
-if not updated:
-    print("Warning: no Agent node found in flow")
-else:
-    patch_resp = requests.patch(
-        f"{langflow_base}/api/v1/flows/{flow_id}",
-        json=flow,
-        headers=lf_headers
-    )
-    patch_resp.raise_for_status()
-    print(f"Flow {flow_id} Agent node updated to Ollama/{llm_model}")
-
-ollama_embedding_value = [{
-    'name': embedding_model,
-    'icon': 'Ollama',
-    'category': 'Ollama',
-    'provider': 'Ollama',
-    'base_url': ollama_endpoint,
-    'metadata': {
-        'embedding_class': 'OllamaEmbeddings',
-        'model_type': 'embeddings',
-        'param_mapping': {
-            'model': 'model',
-            'base_url': 'base_url'
-        }
-    }
-}]
-
-updated = False
-for node in flow.get('data', {}).get('nodes', []):
-    if node.get('data', {}).get('type', '') == 'EmbeddingModel':
-        node['data']['node']['template']['model']['value'] = ollama_embedding_value
-        updated = True
-
-patch_resp = requests.patch(
-    f"{langflow_base}/api/v1/flows/{flow_id}",
-    json=flow,
-    headers=lf_headers
-)
-patch_resp.raise_for_status()
+resp.raise_for_status()
+print(f"Configured Ollama provider: llm={llm_model}, embedding={embedding_model}")

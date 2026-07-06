@@ -13,8 +13,17 @@ with open(os.path.join(script_dir, 'system_prompt.txt')) as prompt_in:
 
 base = "http://localhost:8000"
 
+openrag_api_key = os.getenv("OPENRAG_API_KEY", "")
+if not openrag_api_key:
+    print("Error: OPENRAG_API_KEY is not set. Run scripts/generate-api-key.py first.")
+    raise SystemExit(1)
+
 # Save to OpenRAG settings
-resp = requests.post(f'{base}/settings', json={'system_prompt': prompt})
+resp = requests.post(
+    f'{base}/v1/settings',
+    headers={"X-API-KEY": openrag_api_key, "Content-Type": "application/json"},
+    json={'system_prompt': prompt},
+)
 resp.raise_for_status()
 print(resp.json().get('message', resp.json()))
 
