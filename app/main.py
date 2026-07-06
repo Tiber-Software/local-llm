@@ -102,7 +102,7 @@ def ingest():
 
     for filename in files:
         path = os.path.join(DOCUMENTS_DIR, filename)
-        with console.status(f"[yellow]Ingesting {filename}...[/yellow]"):
+        with console.status(f"[yellow]Ingesting {filename}...[/yellow]") as status:
             try:
                 with open(path, "rb") as fin:
                     resp = requests.post(
@@ -198,13 +198,13 @@ def list_ingested_documents():
 
     return sorted(docs, key=lambda d: d["filename"].lower())
 
-def wait_for_indexed(filename, timeout=300, poll_interval=3):
+def wait_for_indexed(filename, timeout=1000, poll_interval=3):
     elapsed = 0
     while elapsed < timeout:
         try:
             resp = requests.post(
                 f"{OPENSEARCH_URL}/{OPENSEARCH_INDEX_NAME}/_count",
-                aut=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
+                auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
                 verify=False,
                 json={"query": {"term": {"filename": filename}}},
                 timeout=15
@@ -285,7 +285,7 @@ def load(path):
     return current_filename, csv_content
 
 def main():
-    console.print(Panel("[bold cyan] CSV Editor[/bold cyan] - type [bold]help[/bold] for commands", expand=False))
+    console.print(Panel("[bold cyan] CSV Editor[/bold cyan] - type [bold]/help[/bold] for commands", expand=False))
 
     api_key = ensure_api_key()
     csv_content=""
@@ -303,7 +303,7 @@ def main():
         if cmd in ("quit", "exit", "q"):
             break
 
-        if cmd == "help":
+        if cmd == "/help":
             console.print(
                 "   [cyan]/show[/cyan]           - re-display current CSV as a table\n"
                 "   [cyan]/raw[/cyan]            - print raw CSV text\n"
