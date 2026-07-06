@@ -13,6 +13,9 @@ rm -rf ../keys/*
 rm -rf ../flows/runtime/*
 rm -rf ../documents/*
 
+echo "Clearing ingested file tracking..."
+> ../documents/.ingested
+
 echo "Copying inject document to documents dir..."
 cp ../documents.example/* ../documents/
 
