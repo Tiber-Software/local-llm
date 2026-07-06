@@ -385,7 +385,7 @@ def main():
             console.print(f"[green]Saved[/green] -> csvs/{path}")
             continue
 
-        if cmd == "ingest":
+        if cmd == "/ingest":
             ingest()
             continue
 
