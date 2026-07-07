@@ -13,7 +13,6 @@
     - LLM_MODEL (can be any llm ollama model. I suggest llama3.2 for a small model)
     - EMBEDDING_MODEL (can be any embedding ollama model. I suggest embeddinggemma)
     - LANGFLOW_SUPERUSER_PASSWORD (set a strong password)
-    - OPENRAG_API_KEY (run ```python scripts/generate-api-key.py```)
 
 2. Copy documents.example directory and rename to documents
   - These are example injections documents that OpenRAG injests at startup
