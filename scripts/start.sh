@@ -12,6 +12,13 @@ sleep 90
 echo "Pulling models..."
 ./bootstrap-ollama.sh
 
+if [ -z "$(ls -A ../keys 2>/dev/null)" ]; then
+    echo "Initital start; generating api key..."
+    python3 generate-api-key.py
+else
+    echo "Subsequent start; using old api key..."
+fi
+
 echo "Running onboarding..."
 python3 onboard.py
 
