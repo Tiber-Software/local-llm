@@ -3,6 +3,9 @@ set -e
 
 cd "$(dirname "$0")"
 
+# Ensure .ingested exists
+touch ../documents/.ingested
+
 # This sees if it's a fresh start or not
 keys_contents="$(ls -A ../keys 2>/dev/null)"
 
