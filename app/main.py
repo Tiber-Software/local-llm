@@ -5,6 +5,7 @@ import re
 import requests
 import sys
 import time
+import uuid
 
 from dotenv import load_dotenv
 from rich.console import Console
@@ -112,18 +113,23 @@ def ingest():
                         timeout=300
                     )
                 resp.raise_for_status()
-                
-                status.update(f"[yellow]Waiting for {filename} to finish indexing...[/yellow]")
-                indexed = wait_for_indexed(filename)
+                task_id = resp.json().get("task_id")
+
+                completed, task_data = (False, None)
+                if task_id:
+                    status.update(f"[yellow]Waiting for {filename} to finish indexing...[/yellow]")
+                    completed, task_data = wait_for_task(task_id)
 
                 with open(INGESTED_FILE, 'a') as fout:
                     fout.write(filename + "\n")
 
-                if indexed:
+                if completed:
                     console.print(f"[green]Ingested[/green] {filename}")
+                elif task_data and (task_data.get("status") or "").lower() == "failed":
+                    console.print(f"[red]Failed[/red] {filename}: ingestion task reported failure")
                 else:
-                    console.print(f"[yellow]Uploaded[/yellow] {filename} [dim](indexing still in progress, check 'docks' later)[/dim]")
-            
+                    console.print(f"[yellow]Uploaded[/yellow] {filename} [dim](indexing still in progress, check '/docs' later)[/dim]")
+
             except Exception as e:
                 console.print(f"[red]Failed[/red] {filename}: {e}")
 
@@ -198,27 +204,33 @@ def list_ingested_documents():
 
     return sorted(docs, key=lambda d: d["filename"].lower())
 
-def wait_for_indexed(filename, timeout=1000, poll_interval=3):
+def wait_for_task(task_id, timeout=1000, poll_interval=2):
+    """Poll OpenRAG's task-status endpoint until the ingestion task reaches
+    a terminal state. The backend force-refreshes the OpenSearch index before
+    marking a task COMPLETED, so this is a race-free readiness signal."""
     elapsed = 0
     while elapsed < timeout:
         try:
-            resp = requests.post(
-                f"{OPENSEARCH_URL}/{OPENSEARCH_INDEX_NAME}/_count",
-                auth=(OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD),
-                verify=False,
-                json={"query": {"term": {"filename": filename}}},
+            resp = requests.get(
+                f"{OPENRAG_URL}/v1/tasks/{task_id}",
+                headers={"X-API-KEY": OPENRAG_API_KEY},
                 timeout=15
             )
             resp.raise_for_status()
-            if resp.json().get("count", 0) > 0:
-                return True
+            data = resp.json()
+            status = (data.get("status") or "").lower()
+
+            if status == "completed":
+                return True, data
+            if status == "failed":
+                return False, data
         except Exception:
             pass
 
         time.sleep(poll_interval)
         elapsed += poll_interval
-    
-    return False
+
+    return False, None
 
 def extract_csv(text):
     text = text.replace("</br>", "").replace("<br>", "")
@@ -245,7 +257,7 @@ def render_csv(csv_text, title=""):
 
     return table
 
-def chat(api_key, csv_content, instruction):
+def chat(api_key, csv_content, instruction, session_id):
     if not LANGFLOW_FLOW_ID:
         raise ValueError("LANGFLOW_CHAT_FLOW_ID is not set")
 
@@ -253,11 +265,11 @@ def chat(api_key, csv_content, instruction):
         prompt = f"Current CSV:\n```\n{csv_content}\n```\n\nInstruction: {instruction}"
     else:
         prompt = instruction
-    
+
     resp = requests.post(
         f"{LANGFLOW_URL}/api/v1/run/{LANGFLOW_FLOW_ID}",
         headers={"x-api-key": api_key, "Content-Type": "application/json"},
-        json={"input_value": prompt, "output_type": "chat", "input_type": "chat"},
+        json={"input_value": prompt, "output_type": "chat", "input_type": "chat", "session_id": session_id},
         timeout=120
     )
     resp.raise_for_status()
@@ -290,6 +302,7 @@ def main():
     api_key = ensure_api_key()
     csv_content=""
     current_filename=""
+    session_id = str(uuid.uuid4())
 
     while True:
         try:
@@ -362,6 +375,7 @@ def main():
         if cmd == "/clear":
             csv_content = ""
             current_filename = ""
+            session_id = str(uuid.uuid4())
             console.clear()
             console.print("[dim]Context cleared[/dim]")
             continue
@@ -396,7 +410,7 @@ def main():
         
         with console.status("[yellow]Thinking...[/yellow]"):
             try:
-                response = chat(api_key, csv_content, instruction)
+                response = chat(api_key, csv_content, instruction, session_id)
             except Exception as e:
                 console.print(f"[red]Error:[/red] {e}")
                 continue
