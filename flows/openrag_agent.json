@@ -3049,7 +3049,7 @@
                 "trace_as_metadata": true,
                 "track_in_telemetry": true,
                 "type": "int",
-                "value": 1000
+                "value": 0
               },
               "number_of_results": {
                 "_input_type": "IntInput",
