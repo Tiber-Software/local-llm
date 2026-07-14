@@ -12,9 +12,6 @@ wheels/
 .env
 flows/runtime/
 keys/
-documents/
 data/
 config/
 app/tui/
-csvs/*
-!csvs/.gitkeep
