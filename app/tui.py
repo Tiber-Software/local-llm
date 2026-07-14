@@ -12,6 +12,13 @@ API_URL = os.getenv("API_URL", "http://localhost:5000")
 console = Console()
 
 
+def _clean_path(raw):
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in ("'", '"'):
+        raw = raw[1:-1]
+    return os.path.expanduser(raw)
+
+
 def render_csv(content):
     reader = csv.reader(io.StringIO(content))
     rows = list(reader)
@@ -59,6 +66,7 @@ def list_csv_files():
 
 
 def load_csv(filename):
+    filename = _clean_path(filename)
     resp = requests.post(f"{API_URL}/csv", json={"filename": filename})
     if resp.status_code == 404:
         console.print(f"[red]{filename} not found on server[/red]")
@@ -69,6 +77,7 @@ def load_csv(filename):
 
 
 def save_csv(filename):
+    filename = _clean_path(filename)
     current = requests.get(f"{API_URL}/csv")
     if current.status_code == 404:
         console.print("[yellow]No CSV loaded to save.[/yellow]")
@@ -81,6 +90,7 @@ def save_csv(filename):
 
 
 def download_csv(dest_path):
+    dest_path = _clean_path(dest_path)
     resp = requests.get(f"{API_URL}/csv", headers={"Accept": "text/csv"})
     if resp.status_code == 404:
         console.print("[yellow]No CSV loaded.[/yellow]")
@@ -113,6 +123,7 @@ def list_documents():
 
 
 def upload_document(path):
+    path = _clean_path(path)
     if not os.path.exists(path):
         console.print(f"[red]{path} not found locally[/red]")
         return
@@ -125,6 +136,7 @@ def upload_document(path):
 
 
 def remove_document(filename):
+    filename = _clean_path(filename)
     resp = requests.delete(f"{API_URL}/documents/{filename}")
     if resp.status_code >= 400:
         console.print(f"[red]Remove failed: {resp.text}[/red]")
