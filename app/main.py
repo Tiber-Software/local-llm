@@ -1,12 +1,11 @@
 import os
 import re
-import shutil
 import time
 import uuid
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, BackgroundTasks, Query, Header, HTTPException
+from fastapi import FastAPI, UploadFile, Query, Header, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
@@ -22,9 +21,6 @@ LANGFLOW_PASS = os.getenv("LANGFLOW_SUPERUSER_PASSWORD", "")
 
 OPENRAG_URL = os.getenv("OPENRAG_URL", "http://openrag-backend:8000")
 OPENRAG_API_KEY = os.getenv("OPENRAG_API_KEY", "")
-DOCUMENTS_DIR = os.path.join(_script_dir, "documents")
-INGESTED_FILE = os.path.join(DOCUMENTS_DIR, ".ingested")
-CSVS_DIR = "/app/csvs"
 
 OPENSEARCH_HOST = os.getenv("OPENSEARCH_HOST", "opensearch")
 OPENSEARCH_PORT = os.getenv("OPENSEARCH_PORT", "9200")
@@ -39,11 +35,6 @@ app = FastAPI()
 
 _state = {"csv_content": "", "current_filename": "", "session_id": str(uuid.uuid4())}
 _langflow_api_key = None
-
-
-class CsvLoadRequest(BaseModel):
-    filename: str
-    content: str | None = None
 
 
 class ChatRequest(BaseModel):
@@ -201,84 +192,49 @@ def list_ingested_documents():
     return sorted(docs, key=lambda d: d["filename"].lower())
 
 
-def _mark_ingested(filename):
-    with open(INGESTED_FILE, "a") as fout:
-        fout.write(filename + "\n")
-
-
-def _pending_documents():
-    if not os.path.isdir(DOCUMENTS_DIR):
-        return []
-    ingested = set()
-    if os.path.exists(INGESTED_FILE):
-        with open(INGESTED_FILE) as fin:
-            ingested = set(line.strip() for line in fin if line.strip())
-    return [f for f in os.listdir(DOCUMENTS_DIR) if not f.startswith(".") and f not in ingested]
-
-
-def _upload_and_ingest(filename):
-    path = os.path.join(DOCUMENTS_DIR, filename)
-    with open(path, "rb") as fin:
-        resp = requests.post(
-            f"{OPENRAG_URL}/router/upload_ingest",
-            headers={"X-API-KEY": OPENRAG_API_KEY},
-            files={"file": (filename, fin)},
-            timeout=300,
-        )
+def _upload_and_ingest(filename, file_obj):
+    resp = requests.post(
+        f"{OPENRAG_URL}/router/upload_ingest",
+        headers={"X-API-KEY": OPENRAG_API_KEY},
+        files={"file": (filename, file_obj)},
+        timeout=300,
+    )
     resp.raise_for_status()
     return resp.json().get("task_id")
-
-
-def _finalize_ingest(filename, task_id):
-    wait_for_task(task_id)
-    _mark_ingested(filename)
 
 
 # ---- /documents ----
 
 @app.get("/documents")
-def get_documents(status: str = Query("all", pattern="^(all|ingested|pending)$")):
-    result = []
-    if status in ("all", "ingested"):
-        try:
-            for doc in list_ingested_documents():
-                result.append({**doc, "status": "ingested"})
-        except Exception as e:
-            raise HTTPException(status_code=502, detail=str(e))
-    if status in ("all", "pending"):
-        for filename in _pending_documents():
-            result.append({"filename": filename, "status": "pending"})
-    return {"documents": result}
+def get_documents():
+    try:
+        docs = [{**doc, "status": "ingested"} for doc in list_ingested_documents()]
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"documents": docs}
 
 
 @app.post("/documents", status_code=202)
-async def upload_document(file: UploadFile, background_tasks: BackgroundTasks, wait: bool = Query(False)):
+async def upload_document(file: UploadFile, wait: bool = Query(False)):
     if not OPENRAG_API_KEY:
         raise HTTPException(status_code=500, detail="OPENRAG_API_KEY is not set")
 
     filename = os.path.basename(file.filename)
-    dest_path = os.path.join(DOCUMENTS_DIR, filename)
-    with open(dest_path, "wb") as fout:
-        shutil.copyfileobj(file.file, fout)
-
     try:
-        task_id = _upload_and_ingest(filename)
+        task_id = _upload_and_ingest(filename, file.file)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
     if not task_id:
-        _mark_ingested(filename)
         return {"filename": filename, "task_id": None, "status": "uploaded"}
 
     if wait:
         completed, task_data = wait_for_task(task_id)
-        _mark_ingested(filename)
         status = "completed" if completed else (task_data or {}).get("status", "unknown")
         if not completed:
             raise HTTPException(status_code=502, detail={"filename": filename, "task_id": task_id, "status": status})
         return {"filename": filename, "task_id": task_id, "status": status}
 
-    background_tasks.add_task(_finalize_ingest, filename, task_id)
     return {"filename": filename, "task_id": task_id, "status": "processing"}
 
 @app.delete("/documents/{filename}")
@@ -297,23 +253,10 @@ def delete_document(filename: str):
     if not data.get("success"):
         raise HTTPException(status_code=404, detail=data.get("error") or "unknown error")
 
-    if os.path.exists(INGESTED_FILE):
-        with open(INGESTED_FILE) as fin:
-            lines = [l.strip() for l in fin if l.strip() and l.strip() != filename]
-        with open(INGESTED_FILE, "w") as fout:
-            fout.write("\n".join(lines) + ("\n" if lines else ""))
-
     return {"filename": filename, "deleted_chunks": data.get("deleted_chunks", 0), "success": True}
 
 
 # ---- /csv ----
-
-@app.get("/csv/files")
-def list_csv_files():
-    if not os.path.isdir(CSVS_DIR):
-        return {"files": []}
-    return {"files": sorted(f for f in os.listdir(CSVS_DIR) if not f.startswith("."))}
-
 
 @app.get("/csv")
 def get_csv(accept: str | None = Header(None)):
@@ -329,32 +272,10 @@ def get_csv(accept: str | None = Header(None)):
     return {"filename": _state["current_filename"], "content": _state["csv_content"]}
 
 
-@app.post("/csv")
-def post_csv(body: CsvLoadRequest):
-    filename = os.path.basename(body.filename)
-    path = os.path.join(CSVS_DIR, filename)
-
-    if body.content is not None:
-        content = body.content.strip()
-        with open(path, "w") as fout:
-            fout.write(content)
-    else:
-        if not os.path.exists(path):
-            raise HTTPException(status_code=404, detail=f"{filename} not found")
-        with open(path) as fin:
-            content = fin.read().strip()
-
-    _state["csv_content"] = content
-    _state["current_filename"] = filename
-    return {"filename": filename, "content": content}
-
-
 @app.post("/csv/upload")
 async def upload_csv(file: UploadFile):
     filename = os.path.basename(file.filename)
     content = (await file.read()).decode("utf-8").strip()
-    with open(os.path.join(CSVS_DIR, filename), "w") as fout:
-        fout.write(content)
 
     _state["csv_content"] = content
     _state["current_filename"] = filename
