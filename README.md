@@ -23,9 +23,9 @@
     2. Runs ```scripts/bootstrap-ollama.sh```, pulling llm and embedding models
     3. Runs ```python scripts/onboard.py```, setting llm and embedding settings
     4. Runs ```python scripts/set-system-prompt.sh```, setting the system prompt
-    5. Runs ```python scripts/set-llm-provider.sh```, setting the llm provider to ollama
-    6. Runs ```docker exec -it csv-editor python main.py``` starting the application
+    5. Runs ```python scripts/set-llm-provider.sh```, setting the llm provider to ollama'
 
+4. Once running, the api is available at localhost:5000. For a simple frontend, run ```python3 app/tui.py```
 # Teardown
 - For a soft reset, run ```docker compose down``` from ```docker/```
     - This will maintain scripts, settings, and models
