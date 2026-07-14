@@ -54,39 +54,17 @@ def show_raw():
     console.print(resp.json()["content"])
 
 
-def list_csv_files():
-    resp = requests.get(f"{API_URL}/csv/files")
-    resp.raise_for_status()
-    files = resp.json()["files"]
-    if not files:
-        console.print("[dim](no CSV files on server)[/dim]")
+def load_csv(path):
+    path = _clean_path(path)
+    if not os.path.exists(path):
+        console.print(f"[red]{path} not found locally[/red]")
         return
-    for f in files:
-        console.print(f"- {f}")
-
-
-def load_csv(filename):
-    filename = _clean_path(filename)
-    resp = requests.post(f"{API_URL}/csv", json={"filename": filename})
-    if resp.status_code == 404:
-        console.print(f"[red]{filename} not found on server[/red]")
-        return
+    with open(path, "rb") as fin:
+        resp = requests.post(f"{API_URL}/csv/upload", files={"file": (os.path.basename(path), fin)})
     resp.raise_for_status()
-    console.print(f"[green]Loaded {filename}[/green]")
-    render_csv(resp.json()["content"])
-
-
-def save_csv(filename):
-    filename = _clean_path(filename)
-    current = requests.get(f"{API_URL}/csv")
-    if current.status_code == 404:
-        console.print("[yellow]No CSV loaded to save.[/yellow]")
-        return
-    current.raise_for_status()
-    content = current.json()["content"]
-    resp = requests.post(f"{API_URL}/csv", json={"filename": filename, "content": content})
-    resp.raise_for_status()
-    console.print(f"[green]Saved as {filename}[/green]")
+    data = resp.json()
+    console.print(f"[green]Loaded {data['filename']}[/green]")
+    render_csv(data["content"])
 
 
 def download_csv(dest_path):
@@ -165,12 +143,10 @@ HELP = """\
 Commands:
   /show              show current CSV as a table
   /raw               show current CSV as raw text
-  /csvs              list CSV files available on the server
-  /load <file>       load a CSV file from the server
-  /save <file>       save current CSV under a new name on the server
+  /load <path>       load a local CSV file as the active CSV
   /download <path>   download current CSV to a local path
   /clear             clear the loaded CSV
-  /docs              list documents (ingested + pending)
+  /docs              list ingested documents
   /upload <path>     upload a local file for ingestion
   /remove <file>     remove an ingested document
   /newchat           reset chat context
@@ -201,12 +177,8 @@ def main():
                 show_csv()
             elif line == "/raw":
                 show_raw()
-            elif line == "/csvs":
-                list_csv_files()
             elif line.startswith("/load "):
                 load_csv(line[len("/load "):])
-            elif line.startswith("/save "):
-                save_csv(line[len("/save "):])
             elif line.startswith("/download "):
                 download_csv(line[len("/download "):])
             elif line == "/clear":
