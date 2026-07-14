@@ -366,7 +366,11 @@ def get_csv(accept: str | None = Header(None)):
 async def upload_csv(file: UploadFile):
     """Load a new CSV into server state, replacing whatever was loaded before."""
     filename = os.path.basename(file.filename)
-    content = (await file.read()).decode("utf-8").strip()
+    raw = await file.read()
+    try:
+        content = raw.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=422, detail="file must be valid UTF-8 text")
 
     _state["csv_content"] = content
     _state["current_filename"] = filename
