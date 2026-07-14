@@ -26,6 +26,7 @@
     5. Runs ```python scripts/set-llm-provider.sh```, setting the llm provider to ollama'
 
 4. Once running, the api is available at localhost:5000. For a simple frontend, run ```python3 app/tui.py```
+  - See [API.md](API.md) for endpoint examples.
 # Teardown
 - For a soft reset, run ```docker compose down``` from ```docker/```
     - This will maintain scripts, settings, and models
