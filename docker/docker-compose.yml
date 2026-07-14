@@ -1,18 +1,15 @@
 services:
-  python-client:
+  python-server:
     build:
       context: ..
       dockerfile: docker/Dockerfile.python
-    container_name: csv-editor
+    container_name: csv-editor-backend
     depends_on:
       - openrag-backend
     ports:
       - "5000:5000"
     stdin_open: true
     tty: true
-    volumes:
-      - ../csvs:/app/csvs
-      - ../documents:/app/documents
     environment:
       - LANGFLOW_URL=http://langflow:7860
       - LANGFLOW_CHAT_FLOW_ID=${LANGFLOW_CHAT_FLOW_ID}
@@ -38,8 +35,6 @@ services:
     ports:
       - "9200:9200"
       - "9600:9600"
-    volumes:
-      - opensearch-data:/usr/share/opensearch/data
     stop_grace_period: 2m
     healthcheck:
       test: ["CMD-SHELL", "curl -ku admin:$$OPENSEARCH_PASSWORD 'https://opensearch:9200/_cluster/health' -s | grep -qE '\"status\":\"(green|yellow)\"'"]
@@ -241,7 +236,6 @@ services:
       - openrag-network
 
 volumes:
-  opensearch-data:
   ollama_data:
 
 networks:
