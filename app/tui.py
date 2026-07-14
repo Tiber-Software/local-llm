@@ -60,7 +60,7 @@ def load_csv(path):
         console.print(f"[red]{path} not found locally[/red]")
         return
     with open(path, "rb") as fin:
-        resp = requests.post(f"{API_URL}/csv/upload", files={"file": (os.path.basename(path), fin)})
+        resp = requests.post(f"{API_URL}/csv", files={"file": (os.path.basename(path), fin)})
     resp.raise_for_status()
     data = resp.json()
     console.print(f"[green]Loaded {data['filename']}[/green]")

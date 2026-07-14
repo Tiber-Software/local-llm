@@ -362,7 +362,7 @@ def get_csv(accept: str | None = Header(None)):
     return {"filename": _state["current_filename"], "content": _state["csv_content"]}
 
 
-@app.post("/csv/upload", response_model=CsvResponse, tags=["csv"])
+@app.post("/csv", response_model=CsvResponse, tags=["csv"])
 async def upload_csv(file: UploadFile):
     """Load a new CSV into server state, replacing whatever was loaded before."""
     filename = os.path.basename(file.filename)
