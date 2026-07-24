@@ -46,20 +46,6 @@ services:
     networks:
       - openrag-network
 
-  dashboards:
-    image: opensearchproject/opensearch-dashboards:3.0.0
-    container_name: osdash
-    depends_on:
-      - opensearch
-    environment:
-      OPENSEARCH_HOSTS: '["https://${OPENSEARCH_HOST:-opensearch}:${OPENSEARCH_PORT:-9200}"]'
-      OPENSEARCH_USERNAME: "${OPENSEARCH_USERNAME:-admin}"
-      OPENSEARCH_PASSWORD: ${OPENSEARCH_PASSWORD}
-    ports:
-      - "5601:5601"
-    networks:
-      - openrag-network
-
   openrag-backend:
     image: langflowai/openrag-backend:${OPENRAG_VERSION:-latest}
     container_name: openrag-backend
