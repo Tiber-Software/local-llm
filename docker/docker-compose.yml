@@ -207,6 +207,8 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
+    environment:
+      - OLLAMA_CONTEXT_LENGTH=${CONTEXT_LENGTH}
     deploy:
       resources:
         limits:
