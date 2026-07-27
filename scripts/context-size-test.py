@@ -61,7 +61,7 @@ if __name__ == "__main__":
     while True:
         try:
             run_trial(rows)
-        except RuntimeError as e:
+        except (RuntimeError, requests.exceptions.RequestException) as e:
             print(f"\nFAILED at rows={rows}: {e}")
             sys.exit(1)
         rows *= GROWTH_FACTOR
