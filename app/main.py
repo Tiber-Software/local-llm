@@ -215,7 +215,7 @@ def chat_completion(csv_content, instruction, session_id):
         f"{LANGFLOW_URL}/api/v1/run/{LANGFLOW_FLOW_ID}",
         headers={"x-api-key": api_key, "Content-Type": "application/json"},
         json={"input_value": prompt, "output_type": "chat", "input_type": "chat", "session_id": session_id},
-        timeout=120,
+        timeout=3600,
     )
     resp.raise_for_status()
     for output in resp.json().get("outputs", []):
@@ -367,10 +367,14 @@ async def upload_csv(file: UploadFile):
     """Load a new CSV into server state, replacing whatever was loaded before."""
     filename = os.path.basename(file.filename)
     raw = await file.read()
-    try:
-        content = raw.decode("utf-8").strip()
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=422, detail="file must be valid UTF-8 text")
+    for encoding in ("utf-8-sig", "cp1252"):
+        try:
+            content = raw.decode(encoding).strip()
+            break
+        except UnicodeDecodeError:
+            continue
+    else:
+        raise HTTPException(status_code=422, detail="file must be valid UTF-8 or cp1252 text")
 
     _state["csv_content"] = content
     _state["current_filename"] = filename

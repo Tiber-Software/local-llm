@@ -1,10 +1,13 @@
 import csv
 import io
 import os
+import subprocess
 import sys
 
 import requests
 from rich.console import Console
+from rich.measure import Measurement
+from rich.pager import Pager
 from rich.table import Table
 
 API_URL = os.getenv("API_URL", "http://localhost:5000")
@@ -19,6 +22,75 @@ def _clean_path(raw):
     return os.path.expanduser(raw)
 
 
+_MEASURE_CAP = 100_000  # bounds worst-case cost if a single cell is huge;
+                        # for normal CSVs the measured width is just the
+                        # real sum of each column's content width
+
+
+class _LessPager(Pager):
+    """Pipe Rich's rendered output through `less -S -R` for horizontal scroll.
+
+    -S: chop long lines instead of wrapping -> arrow keys scroll sideways.
+    -R: pass through ANSI color codes.
+    """
+
+    def show(self, content: str) -> None:
+        # Deliberately not subprocess.run(): its KeyboardInterrupt handling
+        # calls process.kill() (SIGKILL), which cuts `less` off before it can
+        # restore the terminal (raw mode / alternate screen), leaving the
+        # terminal broken. Mirrors CPython's own pydoc.pipe_pager, which
+        # works around the exact same subprocess.run behavior.
+        try:
+            proc = subprocess.Popen(["less", "-S", "-R"], stdin=subprocess.PIPE)
+        except FileNotFoundError:
+            console.print("[dim](less not found on PATH; showing table without paging)[/dim]")
+            sys.stdout.write(content + "\n")
+            return
+
+        try:
+            with proc.stdin as pipe:
+                try:
+                    pipe.write(content.encode())
+                except (BrokenPipeError, KeyboardInterrupt):
+                    pass
+        except OSError:
+            pass
+
+        while True:
+            try:
+                proc.wait()
+                break
+            except KeyboardInterrupt:
+                pass  # let `less` handle ctrl-C itself; don't kill it
+
+
+def _natural_width(table: Table) -> int:
+    """Width the table needs if no column is shrunk to fit the terminal."""
+    options = console.options.update(max_width=_MEASURE_CAP)
+    return Measurement.get(console, options, table).maximum
+
+
+def _print_table(table: Table) -> None:
+    """Print `table` normally, or page it horizontally through `less -S -R`
+    if its natural width exceeds the real terminal width."""
+    width = _natural_width(table)
+    can_page = console.is_terminal and sys.stdin.isatty()
+
+    if width <= console.width or not can_page:
+        console.print(table)
+        return
+
+    supports_color = console.color_system is not None
+    wide_console = Console(
+        width=width,
+        force_terminal=True,
+        no_color=not supports_color,
+        color_system=console.color_system,
+    )
+    with wide_console.pager(pager=_LessPager(), styles=supports_color):
+        wide_console.print(table)
+
+
 def render_csv(content):
     reader = csv.reader(io.StringIO(content))
     rows = list(reader)
@@ -31,7 +103,7 @@ def render_csv(content):
         table.add_column(col)
     for row in rows[1:]:
         table.add_row(*row)
-    console.print(table)
+    _print_table(table)
 
 
 def show_csv():
