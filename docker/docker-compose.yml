@@ -7,7 +7,7 @@ services:
     depends_on:
       - openrag-backend
     ports:
-      - "5000:5000"
+      - "3000:3000"
     stdin_open: true
     tty: true
     environment:

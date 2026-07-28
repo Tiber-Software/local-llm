@@ -25,7 +25,7 @@
     4. Runs ```python scripts/set-system-prompt.sh```, setting the system prompt
     5. Runs ```python scripts/set-llm-provider.sh```, setting the llm provider to ollama'
 
-4. Once running, the api is available at localhost:5000. For a simple frontend, run ```python3 app/tui.py```
+4. Once running, the api is available at localhost:3000. For a simple frontend, run ```python3 app/tui.py```
   - See [API.md](API.md) for endpoint examples.
 # Teardown
 - For a soft reset, run ```docker compose down``` from ```docker/```

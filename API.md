@@ -1,6 +1,6 @@
 # CSV Editor REST API
 
-Base URL: `http://localhost:5000`
+Base URL: `http://localhost:3000`
 
 Any request that fails upstream (OpenRAG, Langflow, or OpenSearch) is returned as `502` with a `detail` string describing the failure.
 

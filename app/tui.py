@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import re
 import subprocess
 import sys
 
@@ -10,7 +11,7 @@ from rich.measure import Measurement
 from rich.pager import Pager
 from rich.table import Table
 
-API_URL = os.getenv("API_URL", "http://localhost:5000")
+API_URL = os.getenv("API_URL", "http://localhost:3000")
 
 console = Console()
 
@@ -206,7 +207,13 @@ def send_chat(instruction):
         console.print(f"[red]{resp.text}[/red]")
         return
     data = resp.json()
-    console.print(data["response"])
+    text = data["response"]
+    if data.get("csv"):
+        # The fenced block is already shown as a table below; drop it here
+        # so the edit doesn't get printed twice.
+        text = re.sub(r"```[^\n]*\n.*?```", "", text, flags=re.DOTALL).strip()
+    if text:
+        console.print(text)
     if data.get("csv"):
         render_csv(data["csv"])
 

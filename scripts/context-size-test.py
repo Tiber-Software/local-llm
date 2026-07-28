@@ -3,7 +3,7 @@ import io
 import sys
 import requests
 
-API = "http://localhost:5000"
+API = "http://localhost:3000"
 
 START_ROWS = 5
 GROWTH_FACTOR = 2

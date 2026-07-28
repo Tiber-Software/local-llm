@@ -3,4 +3,4 @@ WORKDIR /app
 
 COPY app/main.py .
 RUN pip install requests python-dotenv rich "fastapi[standard]"
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
