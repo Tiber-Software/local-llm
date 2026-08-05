@@ -5,7 +5,7 @@ import requests
 
 API = "http://localhost:3000"
 
-START_ROWS = 5
+START_ROWS = 10
 GROWTH_FACTOR = 2
 
 
@@ -22,16 +22,18 @@ def parse_rows(text):
     return list(csv.reader(io.StringIO(text)))
 
 
-def run_trial(rows):
+def run_trial(rows, verbose=True):
     content = make_csv(rows)
     files = {"file": (f"test_{rows}.csv", content, "text/csv")}
     r = requests.post(f"{API}/csv", files=files, timeout=30)
-    print(f"\nrows={rows} bytes={len(content)} upload_status={r.status_code}")
+    if verbose:
+        print(f"\nrows={rows} bytes={len(content)} upload_status={r.status_code}")
     if not r.ok:
         raise RuntimeError(f"upload failed at rows={rows}: {r.status_code} {r.text}")
 
     resp = requests.post(f"{API}/chat", json={"instruction": "Return this CSV completely unchanged."}, timeout=120)
-    print("chat status:", resp.status_code)
+    if verbose:
+        print("chat status:", resp.status_code)
     if not resp.ok:
         raise RuntimeError(f"chat failed at rows={rows}: {resp.status_code} {resp.text}")
 
@@ -39,29 +41,62 @@ def run_trial(rows):
     returned = data.get("csv") or ""
     original_rows = parse_rows(content)
     returned_rows = parse_rows(returned)
-    print(f"original_rows={len(original_rows)} returned_rows={len(returned_rows)} match={returned_rows == original_rows}")
+    if verbose:
+        print(f"original_rows={len(original_rows)} returned_rows={len(returned_rows)} match={returned_rows == original_rows}")
 
     requests.delete(f"{API}/chat")  # reset session so history doesn't compound
 
     if returned_rows != original_rows:
-        print("\n--- raw model response ---")
-        print(data.get("response"))
-        print("--- end raw response ---")
-        for idx, (o, r) in enumerate(zip(original_rows, returned_rows)):
-            if o != r:
-                print(f"first differing row {idx}: original={o!r} returned={r!r}")
-                break
-        else:
-            print(f"row count differs: original={len(original_rows)} returned={len(returned_rows)}")
+        if verbose:
+            print("\n--- raw model response ---")
+            print(data.get("response"))
+            print("--- end raw response ---")
+            for idx, (o, r) in enumerate(zip(original_rows, returned_rows)):
+                if o != r:
+                    print(f"first differing row {idx}: original={o!r} returned={r!r}")
+                    break
+            else:
+                print(f"row count differs: original={len(original_rows)} returned={len(returned_rows)}")
         raise RuntimeError(f"round-trip mismatch at rows={rows}")
+
+
+def binary_search_limit(last_good, first_bad):
+    print(f"\n{'='*60}")
+    print(f"Binary searching for exact limit between {last_good} and {first_bad} rows...")
+
+    while first_bad - last_good > 1:
+        mid = (last_good + first_bad) // 2
+        try:
+            run_trial(mid, verbose=True)
+            last_good = mid
+        except (RuntimeError, requests.exceptions.RequestException) as e:
+            print(f"  FAILED at {mid} rows")
+            first_bad = mid
+
+    return last_good, first_bad
 
 
 if __name__ == "__main__":
     rows = START_ROWS
+    last_good = None
+
     while True:
         try:
             run_trial(rows)
+            last_good = rows
+            rows = int(rows * GROWTH_FACTOR)
         except (RuntimeError, requests.exceptions.RequestException) as e:
-            print(f"\nFAILED at rows={rows}: {e}")
+            print(f"\n{'='*60}")
+            print(f"FAILED at rows={rows}: {e}")
+            print(f"Last successful: {last_good} rows")
+
+            if last_good is not None and rows - last_good > 1:
+                try:
+                    last_good, first_bad = binary_search_limit(last_good, rows)
+                    print(f"\n{'='*60}")
+                    print(f"EXACT LIMIT: Context supports up to {last_good} rows")
+                    print(f"Fails at: {first_bad} rows")
+                except Exception as search_err:
+                    print(f"Binary search failed: {search_err}")
+
             sys.exit(1)
-        rows *= GROWTH_FACTOR

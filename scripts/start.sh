@@ -26,3 +26,6 @@ python3 set-system-prompt.py
 
 echo "Setting LLM provider..."
 python3 set-llm-provider.py
+
+echo "Setting max tokens..."
+python3 set-max-tokens.py
