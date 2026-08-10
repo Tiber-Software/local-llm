@@ -57,8 +57,9 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
           }
         }
       }
-      if (assistantText && !csvUpdated) {
-        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', text: assistantText }]);
+      if (assistantText) {
+        const displayText = csvUpdated ? `✓ ${assistantText}` : assistantText;
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', text: displayText }]);
       }
     } finally {
       setBusy(false);
