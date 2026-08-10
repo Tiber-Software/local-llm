@@ -394,12 +394,15 @@ def delete_csv():
 @app.post("/chat", response_model=ChatResponse, tags=["chat"])
 def post_chat(body: ChatRequest):
     """Send an instruction to the LLM against the current CSV. If the reply
-    contains a fenced CSV block, it replaces the server's stored CSV state."""
+    contains a fenced CSV block, it replaces the server's stored CSV state and
+    is stripped from the response text returned to the client."""
     response = _upstream(chat_completion, _state["csv_content"], body.instruction, _state["session_id"])
 
     new_csv = extract_csv(response)
     if new_csv:
         _state["csv_content"] = new_csv
+        # Strip the CSV block from the response text so the frontend only sees the summary
+        response = re.sub(r"```[^\n]*\n.*?```", "", response, flags=re.DOTALL).strip()
     return {"response": response, "csv": new_csv}
 
 
