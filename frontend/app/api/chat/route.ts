@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       .join('\n') ?? '';
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  const timeoutId = setTimeout(() => controller.abort(), 120000);
 
   let backendRes;
   try {
@@ -25,6 +25,12 @@ export async function POST(req: Request) {
       body: JSON.stringify({ instruction }),
       signal: controller.signal,
     });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return new Response(
+      JSON.stringify({ error: `Backend request failed: ${err instanceof Error ? err.message : 'Unknown error'}` }),
+      { status: 502, headers: { 'Content-Type': 'application/json' } },
+    );
   } finally {
     clearTimeout(timeoutId);
   }
