@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
@@ -8,6 +8,7 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (clearSignal) {
@@ -20,6 +21,7 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', text: input };
     setMessages((m) => [...m, userMsg]);
     setInput('');
+    textareaRef.current?.focus();
     setBusy(true);
     try {
       const res = await fetch('/api/chat', {
@@ -93,6 +95,7 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
         className="flex gap-2"
       >
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
