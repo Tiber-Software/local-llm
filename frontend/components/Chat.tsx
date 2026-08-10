@@ -33,6 +33,7 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
       const reader = res.body?.getReader();
       if (!reader) return;
       let assistantText = '';
+      let csvUpdated = false;
       const decoder = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
@@ -49,13 +50,14 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
               assistantText += parsed.delta;
             } else if (parsed.type === 'data-csv') {
               onCsvUpdate((parsed.data as { content: string }).content);
+              csvUpdated = true;
             }
           } catch {
             // ignore parsing errors
           }
         }
       }
-      if (assistantText) {
+      if (assistantText && !csvUpdated) {
         setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', text: assistantText }]);
       }
     } finally {
