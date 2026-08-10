@@ -39,3 +39,4 @@
 To set the system prompt, edit ```scripts/system_prompt.txt``` and then run ```python scripts/set-system-prompt.sh```. Bouncing with ```scripts/bounce.sh``` will also set the system prompt.
 
 # Frontend
+To run a basic frontend, go to ```frontend/``` and run ```npm run dev```. The frontend is running on ```localhost:3001```. Note that this frontend requires npm to be installed. To use an even simpler TUI, run ```python app/tui.py```.
