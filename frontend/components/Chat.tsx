@@ -16,12 +16,17 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
     }
   }, [clearSignal]);
 
+  useEffect(() => {
+    if (!busy) {
+      textareaRef.current?.focus();
+    }
+  }, [busy]);
+
   async function send() {
     if (!input.trim()) return;
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', text: input };
     setMessages((m) => [...m, userMsg]);
     setInput('');
-    textareaRef.current?.focus();
     setBusy(true);
     try {
       const res = await fetch('/api/chat', {
