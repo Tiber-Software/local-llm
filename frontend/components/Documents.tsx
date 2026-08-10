@@ -21,6 +21,17 @@ export function Documents() {
     loadDocs();
   }, []);
 
+  useEffect(() => {
+    const hasProcessing = docs.some((d) => d.status === 'processing');
+    if (!hasProcessing) return;
+
+    const interval = setInterval(() => {
+      loadDocs();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [docs]);
+
   async function loadDocs() {
     try {
       const res = await fetch('/api/documents');
@@ -111,7 +122,9 @@ export function Documents() {
                 <div key={doc.filename} className="flex items-start justify-between gap-2 text-sm border-b pb-1">
                   <div className="flex-1 min-w-0">
                     <p className="font-mono text-xs truncate">{doc.filename}</p>
-                    <p className="text-xs text-gray-600">{doc.chunks} chunks • {doc.mimetype}</p>
+                    <p className="text-xs text-gray-600">
+                      {doc.chunks === 0 && doc.status === 'processing' ? 'ingesting...' : `${doc.chunks} chunks`} • {doc.mimetype}
+                    </p>
                   </div>
                   <button
                     onClick={() => handleDelete(doc.filename)}
