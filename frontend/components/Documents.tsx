@@ -11,7 +11,7 @@ type Doc = {
   status: string;
 };
 
-export function Documents() {
+export function Documents({ onClearChat }: { onClearChat?: () => void }) {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -105,22 +105,32 @@ export function Documents() {
 
   return (
     <div className="flex flex-col gap-2 h-full">
-      <div className="flex items-center gap-2">
-        <label className="cursor-pointer rounded bg-blue-200 px-3 py-1 text-sm hover:bg-blue-300 disabled:bg-gray-300">
-          Upload
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleUpload}
-            disabled={uploading}
-          />
-        </label>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="rounded bg-gray-200 px-2 py-0.5 text-sm hover:bg-gray-300"
-        >
-          {expanded ? '▼' : '▶'} Documents ({docs.length})
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <label className="cursor-pointer rounded bg-blue-200 px-3 py-1 text-sm hover:bg-blue-300 disabled:bg-gray-300">
+            Upload
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleUpload}
+              disabled={uploading}
+            />
+          </label>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="rounded bg-gray-200 px-2 py-0.5 text-sm hover:bg-gray-300"
+          >
+            {expanded ? '▼' : '▶'} Documents ({docs.length})
+          </button>
+        </div>
+        {onClearChat && (
+          <button
+            onClick={onClearChat}
+            className="rounded bg-gray-200 px-3 py-1 text-sm hover:bg-gray-300"
+          >
+            Clear
+          </button>
+        )}
       </div>
       {expanded && (
         <>

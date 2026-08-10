@@ -1,13 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Message = { id: string; role: 'user' | 'assistant'; text: string };
 
-export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
+export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) => void; clearSignal?: number }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (clearSignal) {
+      setMessages([]);
+    }
+  }, [clearSignal]);
 
   async function send() {
     if (!input.trim()) return;

@@ -63,3 +63,14 @@ export async function POST(req: Request) {
     },
   });
 }
+
+export async function DELETE() {
+  const res = await fetch(`${BACKEND_URL}/chat`, { method: 'DELETE' });
+  if (!res.ok) {
+    return new Response(
+      JSON.stringify({ error: `Backend /chat DELETE failed: ${res.status}` }),
+      { status: 502, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+  return new Response(null, { status: 204 });
+}
