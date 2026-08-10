@@ -68,8 +68,7 @@ export function Documents() {
 
   return (
     <div className="flex flex-col gap-2 h-full">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Documents ({docs.length})</h2>
+      <div className="flex items-center gap-2">
         <label className="cursor-pointer rounded bg-blue-200 px-3 py-1 text-sm hover:bg-blue-300 disabled:bg-gray-300">
           Upload
           <input
@@ -79,6 +78,7 @@ export function Documents() {
             disabled={uploading}
           />
         </label>
+        <h2 className="font-semibold">Documents ({docs.length})</h2>
       </div>
       {loading ? (
         <p className="text-gray-500">Loading…</p>
