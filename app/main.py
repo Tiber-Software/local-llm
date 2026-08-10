@@ -403,6 +403,9 @@ def post_chat(body: ChatRequest):
         _state["csv_content"] = new_csv
         # Strip the CSV block from the response text so the frontend only sees the summary
         response = re.sub(r"```[^\n]*\n.*?```", "", response, flags=re.DOTALL).strip()
+        # If nothing meaningful remains after stripping, provide a default acknowledgement
+        if not response:
+            response = "CSV updated."
     return {"response": response, "csv": new_csv}
 
 
