@@ -2,6 +2,53 @@
 
 import { useEffect, useState } from 'react';
 
+function parseCsv(content: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentField = '';
+  let insideQuotes = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    const nextChar = content[i + 1];
+
+    if (char === '"') {
+      if (insideQuotes && nextChar === '"') {
+        currentField += '"';
+        i++;
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+    } else if (char === ',' && !insideQuotes) {
+      currentRow.push(currentField.trim());
+      currentField = '';
+    } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+      if (currentField || currentRow.length > 0) {
+        currentRow.push(currentField.trim());
+        if (currentRow.some((f) => f)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentField = '';
+      }
+      if (char === '\r' && nextChar === '\n') {
+        i++;
+      }
+    } else {
+      currentField += char;
+    }
+  }
+
+  if (currentField || currentRow.length > 0) {
+    currentRow.push(currentField.trim());
+    if (currentRow.some((f) => f)) {
+      rows.push(currentRow);
+    }
+  }
+
+  return rows;
+}
+
 export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: string | null) => void }) {
   const [filename, setFilename] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,8 +128,29 @@ export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: stri
       </div>
       {loading ? (
         <p className="text-gray-500">Loading…</p>
+      ) : csv ? (
+        <div className="flex-1 overflow-auto border rounded min-h-0 bg-white">
+          <table className="w-full border-collapse text-sm">
+            <tbody>
+              {parseCsv(csv).map((row, rowIdx) => (
+                <tr key={rowIdx} className={rowIdx === 0 ? 'bg-gray-100' : rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  {row.map((cell, cellIdx) => (
+                    <td
+                      key={cellIdx}
+                      className="border border-gray-300 px-3 py-2 font-mono text-xs whitespace-nowrap overflow-hidden text-overflow-ellipsis"
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <textarea className="flex-1 w-full border rounded p-2 font-mono text-sm overflow-y-auto min-h-0" value={csv ?? ''} readOnly />
+        <div className="flex-1 flex items-center justify-center border rounded bg-gray-50 text-gray-400">
+          No CSV loaded
+        </div>
       )}
     </div>
   );
