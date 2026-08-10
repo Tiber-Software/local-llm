@@ -45,7 +45,18 @@ export function Documents() {
       form.append('file', file);
       const res = await fetch('/api/documents', { method: 'POST', body: form });
       if (res.ok) {
-        await loadDocs();
+        const data = await res.json();
+        setDocs((d) => [
+          ...d,
+          {
+            filename: data.filename,
+            chunks: 0,
+            source: 'upload',
+            mimetype: file.type || 'unknown',
+            indexed_time: new Date().toISOString(),
+            status: data.status,
+          },
+        ]);
       }
     } finally {
       setUploading(false);
@@ -59,9 +70,11 @@ export function Documents() {
       const res = await fetch(`/api/documents?filename=${encodeURIComponent(filename)}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
-        await loadDocs();
+      if (!res.ok) {
+        console.error('Delete failed:', res.status);
+        return;
       }
+      setDocs((d) => d.filter((doc) => doc.filename !== filename));
     } catch (err) {
       console.error('Failed to delete document', err);
     }
