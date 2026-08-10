@@ -18,3 +18,6 @@ CSV output format:
 - Always wrap CSV in triple backticks (```)
 - One row per line
 - No extra text inside the code block
+- For fields containing quotes, commas, or newlines: wrap the field in quotes and escape internal quotes by doubling them
+  - Example: to display `"hello"`, write the CSV field as: `"""hello"""`
+  - Example: to display `data, more`, write: `"data, more"`
