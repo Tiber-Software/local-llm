@@ -17,8 +17,8 @@ export default function Home() {
   }
 
   return (
-    <main className="grid grid-cols-2 gap-4 h-screen p-4">
-      <div className="grid gap-4" style={{ gridTemplateRows: '1fr 2fr' }}>
+    <main className="grid grid-cols-2 gap-4 h-screen p-4 overflow-hidden">
+      <div className="grid gap-4 min-h-0" style={{ gridTemplateRows: '1fr 2fr' }}>
         <Documents onClearChat={handleClearChat} />
         <Chat onCsvUpdate={setCsv} clearSignal={clearChatSignal} />
       </div>

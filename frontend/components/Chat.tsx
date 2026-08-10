@@ -9,6 +9,7 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (clearSignal) {
@@ -21,6 +22,15 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
       textareaRef.current?.focus();
     }
   }, [busy]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+  }, [messages]);
 
   async function send() {
     if (!input.trim()) return;
@@ -80,8 +90,8 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
   }
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      <div className="flex-1 overflow-y-auto space-y-2">
+    <div className="flex flex-col h-full gap-4 overflow-hidden min-h-0">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {messages.map((m) => (
           <div key={m.id} className={m.role === 'user' ? 'text-right' : 'text-left'}>
             <span

@@ -53,7 +53,7 @@ export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: stri
   }
 
   return (
-    <div className="flex flex-col gap-2 h-full">
+    <div className="flex flex-col gap-2 h-full overflow-hidden min-h-0">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">{filename ?? 'No CSV loaded'}</h2>
         <div className="flex gap-2">
@@ -82,7 +82,7 @@ export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: stri
       {loading ? (
         <p className="text-gray-500">Loading…</p>
       ) : (
-        <textarea className="flex-1 w-full border rounded p-2 font-mono text-sm" value={csv ?? ''} readOnly />
+        <textarea className="flex-1 w-full border rounded p-2 font-mono text-sm overflow-y-auto min-h-0" value={csv ?? ''} readOnly />
       )}
     </div>
   );

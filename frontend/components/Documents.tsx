@@ -104,7 +104,7 @@ export function Documents({ onClearChat }: { onClearChat?: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-2 h-full">
+    <div className="flex flex-col gap-2 h-full min-h-0">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <label className="cursor-pointer rounded bg-blue-200 px-3 py-1 text-sm hover:bg-blue-300 disabled:bg-gray-300">
@@ -139,7 +139,7 @@ export function Documents({ onClearChat }: { onClearChat?: () => void }) {
           ) : docs.length === 0 ? (
             <p className="text-gray-500 text-sm">No documents uploaded yet</p>
           ) : (
-            <div className="flex-1 overflow-y-auto space-y-1 border rounded p-2">
+            <div className="flex-1 overflow-y-auto space-y-1 border rounded p-2 min-h-0">
               {docs.map((doc) => (
                 <div key={doc.filename} className="flex items-start justify-between gap-2 text-sm border-b pb-1">
                   <div className="flex-1 min-w-0">
