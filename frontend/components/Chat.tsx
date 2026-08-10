@@ -86,12 +86,13 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
         }}
         className="flex gap-2"
       >
-        <input
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask the assistant to edit the CSV..."
-          className="flex-1 border rounded px-3 py-2"
+          className="flex-1 border rounded px-3 py-2 resize-none"
           disabled={busy}
+          rows={3}
         />
         <button type="submit" className="rounded bg-black text-white px-4 py-2 disabled:bg-gray-400" disabled={busy}>
           {busy ? 'Sending…' : 'Send'}

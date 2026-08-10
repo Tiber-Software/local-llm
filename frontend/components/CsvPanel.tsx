@@ -41,6 +41,17 @@ export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: stri
     }
   }
 
+  function handleDownload() {
+    if (!csv) return;
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="flex flex-col gap-2 h-full">
       <div className="flex items-center justify-between">
@@ -51,12 +62,20 @@ export function CsvPanel({ csv, setCsv }: { csv: string | null; setCsv: (v: stri
             <input type="file" accept=".csv" className="hidden" onChange={handleUpload} />
           </label>
           {csv && (
-            <button
-              onClick={handleClear}
-              className="rounded bg-red-200 px-3 py-1 text-sm hover:bg-red-300"
-            >
-              Clear
-            </button>
+            <>
+              <button
+                onClick={handleDownload}
+                className="rounded bg-green-200 px-3 py-1 text-sm hover:bg-green-300"
+              >
+                Download
+              </button>
+              <button
+                onClick={handleClear}
+                className="rounded bg-red-200 px-3 py-1 text-sm hover:bg-red-300"
+              >
+                Clear
+              </button>
+            </>
           )}
         </div>
       </div>
