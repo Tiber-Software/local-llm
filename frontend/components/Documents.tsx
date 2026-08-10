@@ -15,6 +15,7 @@ export function Documents() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     loadDocs();
@@ -78,29 +79,38 @@ export function Documents() {
             disabled={uploading}
           />
         </label>
-        <h2 className="font-semibold">Documents ({docs.length})</h2>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="rounded bg-gray-200 px-2 py-0.5 text-sm hover:bg-gray-300"
+        >
+          {expanded ? '▼' : '▶'} Documents ({docs.length})
+        </button>
       </div>
-      {loading ? (
-        <p className="text-gray-500">Loading…</p>
-      ) : docs.length === 0 ? (
-        <p className="text-gray-500 text-sm">No documents uploaded yet</p>
-      ) : (
-        <div className="flex-1 overflow-y-auto space-y-1 border rounded p-2">
-          {docs.map((doc) => (
-            <div key={doc.filename} className="flex items-start justify-between gap-2 text-sm border-b pb-1">
-              <div className="flex-1 min-w-0">
-                <p className="font-mono text-xs truncate">{doc.filename}</p>
-                <p className="text-xs text-gray-600">{doc.chunks} chunks • {doc.mimetype}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(doc.filename)}
-                className="rounded bg-red-100 px-2 py-0.5 text-xs hover:bg-red-200 flex-shrink-0"
-              >
-                Delete
-              </button>
+      {expanded && (
+        <>
+          {loading ? (
+            <p className="text-gray-500 text-sm">Loading…</p>
+          ) : docs.length === 0 ? (
+            <p className="text-gray-500 text-sm">No documents uploaded yet</p>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-1 border rounded p-2">
+              {docs.map((doc) => (
+                <div key={doc.filename} className="flex items-start justify-between gap-2 text-sm border-b pb-1">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-mono text-xs truncate">{doc.filename}</p>
+                    <p className="text-xs text-gray-600">{doc.chunks} chunks • {doc.mimetype}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(doc.filename)}
+                    className="rounded bg-red-100 px-2 py-0.5 text-xs hover:bg-red-200 flex-shrink-0"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
