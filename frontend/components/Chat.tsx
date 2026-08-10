@@ -95,6 +95,12 @@ export function Chat({ onCsvUpdate, clearSignal }: { onCsvUpdate: (csv: string) 
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
           placeholder="Ask the assistant to edit the CSV..."
           className="flex-1 border rounded px-3 py-2 resize-none"
           disabled={busy}
