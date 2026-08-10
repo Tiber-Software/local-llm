@@ -1,18 +1,67 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
 
+type Message = { id: string; role: 'user' | 'assistant'; text: string };
+
 export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const { messages, sendMessage, status } = useChat({
-    api: '/api/chat',
-    onData: (part) => {
-      if (part.type === 'data-csv') {
-        onCsvUpdate((part.data as { content: string }).content);
+  const [busy, setBusy] = useState(false);
+
+  async function send() {
+    if (!input.trim()) return;
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', text: input };
+    setMessages((m) => [...m, userMsg]);
+    setInput('');
+    setBusy(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({ role: m.role, parts: [{ type: 'text', text: m.text }] })),
+            { role: 'user', parts: [{ type: 'text', text: userMsg.text }] },
+          ],
+        }),
+      });
+      if (!res.ok) {
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${res.status}` }]);
+        return;
       }
-    },
-  });
+      const reader = res.body?.getReader();
+      if (!reader) return;
+      let assistantText = '';
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const data = line.slice(5).trim();
+          if (!data) continue;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === 'text-delta') {
+              assistantText += parsed.delta;
+            } else if (parsed.type === 'data-csv') {
+              onCsvUpdate((parsed.data as { content: string }).content);
+            }
+          } catch {
+            // ignore parsing errors
+          }
+        }
+      }
+      if (assistantText) {
+        setMessages((m) => [...m, { id: crypto.randomUUID(), role: 'assistant', text: assistantText }]);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -20,15 +69,9 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
         {messages.map((m) => (
           <div key={m.id} className={m.role === 'user' ? 'text-right' : 'text-left'}>
             <span
-              className={`inline-block rounded-lg px-3 py-2 ${
-                m.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'
-              }`}
+              className={`inline-block rounded-lg px-3 py-2 ${m.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}
             >
-              {m.parts
-                .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-                .map((p, i) => (
-                  <span key={i}>{p.text}</span>
-                ))}
+              {m.text}
             </span>
           </div>
         ))}
@@ -36,9 +79,7 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!input.trim()) return;
-          sendMessage({ text: input });
-          setInput('');
+          send();
         }}
         className="flex gap-2"
       >
@@ -47,14 +88,10 @@ export function Chat({ onCsvUpdate }: { onCsvUpdate: (csv: string) => void }) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask the assistant to edit the CSV..."
           className="flex-1 border rounded px-3 py-2"
-          disabled={status !== 'ready'}
+          disabled={busy}
         />
-        <button
-          type="submit"
-          className="rounded bg-black text-white px-4 py-2 disabled:bg-gray-400"
-          disabled={status !== 'ready'}
-        >
-          Send
+        <button type="submit" className="rounded bg-black text-white px-4 py-2 disabled:bg-gray-400" disabled={busy}>
+          {busy ? 'Sending…' : 'Send'}
         </button>
       </form>
     </div>
