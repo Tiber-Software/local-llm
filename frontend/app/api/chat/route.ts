@@ -1,4 +1,6 @@
-import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from 'ai';
+type UIMessage = {
+  parts: Array<{ type: 'text'; text: string }>;
+};
 
 const BACKEND_URL = process.env.CSV_EDITOR_BACKEND_URL ?? 'http://localhost:3000';
 
@@ -28,18 +30,27 @@ export async function POST(req: Request) {
 
   const data: { response: string; csv: string | null } = await backendRes.json();
 
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    start(controller) {
       const textId = crypto.randomUUID();
-      writer.write({ type: 'text-start', id: textId });
-      writer.write({ type: 'text-delta', id: textId, delta: data.response });
-      writer.write({ type: 'text-end', id: textId });
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-start', id: textId })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-delta', id: textId, delta: data.response })}\n\n`));
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text-end', id: textId })}\n\n`));
 
       if (data.csv !== null) {
-        writer.write({ type: 'data-csv', data: { content: data.csv } });
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'data-csv', data: { content: data.csv } })}\n\n`));
       }
+
+      controller.close();
     },
   });
 
-  return createUIMessageStreamResponse({ stream });
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
 }
