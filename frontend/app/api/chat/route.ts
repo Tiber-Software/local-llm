@@ -14,11 +14,20 @@ export async function POST(req: Request) {
       .map((p) => p.text)
       .join('\n') ?? '';
 
-  const backendRes = await fetch(`${BACKEND_URL}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ instruction }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  let backendRes;
+  try {
+    backendRes = await fetch(`${BACKEND_URL}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ instruction }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!backendRes.ok) {
     const detail = await backendRes.text().catch(() => '');
