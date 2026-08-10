@@ -37,7 +37,19 @@ export function Documents() {
       const res = await fetch('/api/documents');
       if (res.ok) {
         const data = await res.json();
-        setDocs(data.documents || []);
+        const serverDocs = data.documents || [];
+        setDocs((current) => {
+          const merged = [...current];
+          for (const serverDoc of serverDocs) {
+            const idx = merged.findIndex((d) => d.filename === serverDoc.filename);
+            if (idx >= 0) {
+              merged[idx] = serverDoc;
+            } else {
+              merged.push(serverDoc);
+            }
+          }
+          return merged;
+        });
       }
     } catch (err) {
       console.error('Failed to load documents', err);
