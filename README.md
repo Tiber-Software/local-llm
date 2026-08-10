@@ -36,4 +36,6 @@
 
 
 # Setting System Prompt
-To set the system prompt, edit ```scripts/system_prompt.txt``` and then run ```python scripts/set-system-prompt.sh```
+To set the system prompt, edit ```scripts/system_prompt.txt``` and then run ```python scripts/set-system-prompt.sh```. Bouncing with ```scripts/bounce.sh``` will also set the system prompt.
+
+# Frontend
