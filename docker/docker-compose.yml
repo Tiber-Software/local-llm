@@ -37,7 +37,7 @@ services:
       - "9600:9600"
     stop_grace_period: 2m
     healthcheck:
-      test: ["CMD-SHELL", "curl -ku admin:$$OPENSEARCH_PASSWORD 'https://opensearch:9200/_cluster/health' -s | grep -qE '\"status\":\"(green|yellow)\"'"]
+      test: ["CMD-SHELL", "curl -ku admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD 'https://opensearch:9200/_cluster/health' -s | grep -qE '\"status\":\"(green|yellow)\"'"]
       interval: 15s
       timeout: 10s
       retries: 20
@@ -50,10 +50,18 @@ services:
     image: langflowai/openrag-backend:${OPENRAG_VERSION:-latest}
     container_name: openrag-backend
     depends_on:
-      - opensearch
-      - langflow
+      opensearch:
+        condition: service_healthy
+      langflow:
+        condition: service_healthy
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     environment:
       - OPENSEARCH_HOST=${OPENSEARCH_HOST:-opensearch}
       - LANGFLOW_URL=http://langflow:7860
@@ -136,6 +144,12 @@ services:
     container_name: langflow
     ports:
       - "${LANGFLOW_PORT:-7860}:7860"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:7860/health_check > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     volumes:
       - ../flows/shared:/app/flows:ro,U,z
       - ../flows/runtime:/app/langflow-flows:U,z

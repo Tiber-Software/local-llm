@@ -4,10 +4,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "Starting stack..."
-docker compose -f ../docker/docker-compose.yml -f ../docker/docker-compose.gpu.yml --env-file ../.env up -d --build
-
-echo "Waiting 90 seconds for services to warm up..."
-sleep 90
+docker compose -f ../docker/docker-compose.yml -f ../docker/docker-compose.gpu.yml --env-file ../.env up -d --build --wait --wait-timeout 300
 
 echo "Pulling models..."
 ./bootstrap-ollama.sh
@@ -16,7 +13,7 @@ echo "Generating API key..."
 python3 generate-api-key.py
 
 echo "Restarting stack with api key..."
-docker compose -f ../docker/docker-compose.yml -f ../docker/docker-compose.gpu.yml --env-file ../.env up -d --build
+docker compose -f ../docker/docker-compose.yml -f ../docker/docker-compose.gpu.yml --env-file ../.env up -d --build --wait --wait-timeout 300
 
 echo "Running onboarding..."
 python3 onboard.py
